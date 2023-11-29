@@ -1,0 +1,97 @@
+/*
+    This file contains source-code snippets that the code-generator inserts into the 
+    appropriate class definition file.   
+
+*/
+
+>> __init__.py
+
+# Represents TPM_RH.NULL reserved handle
+TPM_HANDLE.NULL = TPM_HANDLE(TPM_RH.NULL)
+
+# Represents TPM_RH.OWNER reserved handle
+TPM_HANDLE.OWNER = TPM_HANDLE(TPM_RH.OWNER)
+
+# Represents TPM_RH.ENDORSEMENT reserved handle
+TPM_HANDLE.ENDORSEMENT = TPM_HANDLE(TPM_RH.ENDORSEMENT)
+
+# Represents TPM_RH.PLATFORM reserved handle
+TPM_HANDLE.PLATFORM = TPM_HANDLE(TPM_RH.PLATFORM)
+
+>> TPM_HANDLE
+
+# The following static members represent TPM_RH constants
+NULL = None
+OWNER = None
+PLATFORM = None
+ENDORSEMENT = None
+
+@staticmethod
+def persistent(handleOffset):
+    """ Creates a TPM_HANDLE for a persistent object
+    Args:
+        handleOffset (int): Offset in the integer range reserved for persistent handles
+    Returns:
+        New TPM_HANDLE object
+    """
+    return TPM_HANDLE((TPM_HT.PERSISTENT << 24) + handleOffset)
+
+@staticmethod
+def pcr(pcrIndex):
+    """ Creates a TPM_HANDLE for a PCR
+    Args:
+        pcrIndex (int):  The PCR index
+    Returns:
+        New TPM_HANDLE object
+    """
+    return TPM_HANDLE(pcrIndex)
+
+@staticmethod
+def nv(nvIndex):
+    """ Creates a TPM_HANDLE for an NV slot
+    Args:
+        nvIndex (int):  The NV index
+    Returns:
+        New TPM_HANDLE object
+    """
+    return TPM_HANDLE((TPM_HT.NV_INDEX << 24) + nvIndex)
+
+@staticmethod
+def pwSession(authValue):
+    """ Creates a password session handle with the associated authorization value
+    Args:
+        authValue (bytearray): The authorization value
+    Returns:
+        New TPM_HANDLE object
+    """
+    pwapHandle = TPM_HANDLE(TPM_RH.RS_PW)
+    pwapHandle.authValue = authValue
+    return pwapHandle
+
+def getType(self):
+    """ Returns this handle type """
+    return TPM_HT(self.handle >> 24)
+
+def getName(self):
+    """ Returns the TPM name of this handle """
+    t = self.getType()
+    if t == 0 or t == 2 or t == 3 or t == 0x40:
+        self.name = self.toBytes()
+        return self.name
+    elif t == 1 or t == 0x80 or t == 0x81:
+        return self.name
+    else:
+        raise(Exception("TPM_HANDLE.getName(): Unknown handle type"))
+
+def __str__(self):
+    return str(self.getType()) + ':0x' + hex(self.handle)
+
+>> TPMT_PUBLIC
+
+# @return The TPM name (alg-prepended hash of the public area) of this object
+def getName(self):
+    pub = self.toBytes()
+    pubHash = Crypto.hash(self.nameAlg, pub)
+    algBuf = intToTpm(self.nameAlg, 2)
+    return algBuf + bytes(pubHash)
+
