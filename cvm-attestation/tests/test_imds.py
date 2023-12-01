@@ -1,3 +1,7 @@
+# test_imds.py
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import pytest
 import requests
 from src.imds import get_td_quote, get_vcek_certificate

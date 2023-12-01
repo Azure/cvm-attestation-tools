@@ -1,6 +1,7 @@
-'''
-    Attestation Report parser helpers
-'''
+# report_parser.py
+#
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
 
 # byte offset of the td report
 HW_REPORT_START = 32

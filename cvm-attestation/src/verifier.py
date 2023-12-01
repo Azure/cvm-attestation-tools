@@ -1,3 +1,7 @@
+# verifier.py
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import requests
 import json
 import logging

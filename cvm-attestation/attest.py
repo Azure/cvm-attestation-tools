@@ -1,3 +1,6 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 from base64 import urlsafe_b64encode
 import json
 import jwt

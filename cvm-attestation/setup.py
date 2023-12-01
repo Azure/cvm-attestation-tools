@@ -1,4 +1,8 @@
 # setup.py
+#
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 from setuptools import setup, find_packages
 
 setup(

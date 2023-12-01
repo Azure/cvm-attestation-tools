@@ -1,3 +1,8 @@
+# test_verifier.py
+#
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import pytest
 import requests
 import logging

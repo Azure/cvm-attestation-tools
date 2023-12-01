@@ -1,3 +1,8 @@
+# tpm_wrapper.py
+#
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 from  hashlib import sha512
 import json
 from external.TSS_MSR.src.Tpm import *

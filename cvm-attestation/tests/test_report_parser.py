@@ -1,3 +1,8 @@
+# test_report_parser.py
+#
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import pytest
 from src.report_parser import extract_hw_report, extract_runtime_data
 
