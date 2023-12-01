@@ -1,6 +1,6 @@
 import pytest
 import requests
-from src.imds import get_platform_evidence
+from src.imds import get_td_quote, get_vcek_certificate
 
 
 def read_hcl_report():
@@ -18,7 +18,7 @@ def mock_http_request(mocker):
     return mocker.patch('requests.post', return_value=response)
 
 
-def test_successful_request(mocker, mock_http_request):
+def test_successful_td_quote_request(mocker, mock_http_request):
     encoded_report = '{\"report\":\"some encoded report\"}'
-    evidence = get_platform_evidence(encoded_report)
+    evidence = get_td_quote(encoded_report)
     assert 'evidence' in evidence

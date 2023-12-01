@@ -26,16 +26,26 @@ def mock_logging_error(mocker):
 
 
 def test_successful_request(mocker, mock_http_request):
-    quote = 'encoded quote'
-    runtime_data = 'encoded runtime data'
-    encoded_token = verify_evidence(quote, runtime_data)
+    config = {
+        'evidence': 'encoded quote',
+        'runtime_data': 'encoded runtime data',
+        'verifier': 'some attestation_provider',
+        'api_key': 'some api_key',
+        'endpoint': 'some attestation_url'
+    }
+    encoded_token = verify_evidence(config)
     assert 'encoded token' in encoded_token
 
 
 def test_failed_request(mocker, mock_http_fail_request, mock_logging_error):
-    quote = 'encoded quote'
-    runtime_data = 'encoded runtime data'
-    encoded_token = verify_evidence(quote, runtime_data)
+    config = {
+        'evidence': 'encoded quote',
+        'runtime_data': 'encoded runtime data',
+        'verifier': 'some attestation_provider',
+        'api_key': 'some api_key',
+        'endpoint': 'some attestation_url'
+    }
+    encoded_token = verify_evidence(config)
 
     endpoint=''
 

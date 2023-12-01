@@ -1,5 +1,5 @@
 import pytest
-from src.report_parser import extract_td_report, extract_runtime_data
+from src.report_parser import extract_hw_report, extract_runtime_data
 
 def read_hcl_report():
     file = open("tests/report.bin","rb")
@@ -13,7 +13,7 @@ def test_extract_td_report():
     EXPECTED_TD_REPORT_SIZE = 1024
 
     hcl_report = read_hcl_report()
-    td_report = extract_td_report(hcl_report)
+    td_report = extract_hw_report(hcl_report)
 
     assert len(td_report) == EXPECTED_TD_REPORT_SIZE
 
