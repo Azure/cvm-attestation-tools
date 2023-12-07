@@ -1,6 +1,9 @@
 # Python Attestation Sample App
 Remote Attestation empowers a `relying party`, whether it be the workload owner or the user, to authenticate that their workload is operating on a platform equipped with `Intel TDX` technology before divulging sensitive information. In this instance, we undertake the assessment of the `Hardware Report's` integrity and trustworthiness through the services of an Attestation Provider. This application serves as an instructive demonstration highlighting the implementation of Remote Attestation using Python programming language.
 
+## Overview
+
+![Attestation](img/attest.png)
 
 ## Intall Dependencies and Build CLI Tool
 Install all the dependencies and build the CLI tool called `attest`
