@@ -1,4 +1,5 @@
 # verifier.py
+#
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
@@ -18,8 +19,8 @@ DEFAULT_VERIFIERS = {
     'path': '/attest/SevSnpVm',
     'version': 'api-version=2022-08-01'
   },
-  'amber': {
-    'host': 'https://api.projectamber.intel.com',
+  'ita': {
+    'host': 'https://api.trustauthority.intel.com',
     'path': '/appraisal/v1/attest'
   }
 }
@@ -51,7 +52,7 @@ def create_payload(verifier, evidence, runtimes_data):
         'dataType': 'JSON'
       }
     }
-  elif verifier == 'amber':
+  elif verifier == 'ita':
     payload = {
       'quote': evidence
     }
@@ -119,16 +120,16 @@ def print_tdx_maa_claims(claims):
   print("\tTPM Persisted: ", claims['x-ms-runtime']['vm-configuration']['tpm-persisted'])
 
 
-def print_tdx_amber_claims(claims):
-  if claims['amber_tcb_status'] == 'OK':
+def print_tdx_ita_claims(claims):
+  if claims['attester_tcb_status'] == 'UpToDate':
     print()
     print("Attested Platform Successfully!!")
 
   print()
   print("Claims:")
-  print("\tTCB Status: ", claims['amber_tcb_status'])
-  print("\tTEE Debuggable: ", claims['amber_tee_is_debuggable'])
-  print("\tEvidence Type: ", claims['amber_evidence_type'])
+  print("\tTCB Status: ", claims['attester_tcb_status'])
+  print("\tTDX Debuggable: ", claims['tdx_is_debuggable'])
+  print("\tEvidence Type: ", claims['attester_type'])
   print()
 
 
@@ -150,8 +151,8 @@ def print_snp_claims(claims):
 def print_token_claims(claims, verfier='maa'):
   if verfier == 'maa_tdx':
     print_tdx_maa_claims(claims)
-  elif verfier == 'amber':
-    print_tdx_amber_claims(claims)
+  elif verfier == 'ita':
+    print_tdx_ita_claims(claims)
   elif verfier == 'maa_snp':
     print_snp_claims(claims)
   else:
