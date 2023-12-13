@@ -1,0 +1,6 @@
+# Requirements for sample
+requests
+pytest
+pytest-mock
+Click
+pyjwt
