@@ -64,8 +64,8 @@ try {
     } elseif ($vendor -eq "GenuineIntel") {
         attest.exe --c .\config_tdx.json
     } else {
-		Write-Output "Unknown hardware vendor: $vendor"
-	}
+        Write-Output "Unknown hardware vendor: $vendor"
+    }
 } catch {
     $line = $_.InvocationInfo.ScriptLineNumber
     $scriptName = $_.InvocationInfo.ScriptName
@@ -73,4 +73,3 @@ try {
     Write-Output "EXCEPTION : $errorMessage"
     Write-Output "Source : Line $line in script $scriptName."
 }
-exit 0
