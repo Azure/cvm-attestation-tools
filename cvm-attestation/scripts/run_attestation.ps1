@@ -1,15 +1,18 @@
 function Install-Chocolatey {
-    Write-Output "Starting Install-Chocolatey..."
+    if (-not (Test-Path "C:\ProgramData\chocolatey\bin\choco.exe"))
+    {
+        Write-Output "Starting Install-Chocolatey..."
 
-    $env:chocolateyVersion = '1.4.0'
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-    Set-ExecutionPolicy Bypass -Scope Process -Force; Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+        $env:chocolateyVersion = '1.4.0'
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Set-ExecutionPolicy Bypass -Scope Process -Force; Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 
-    Write-Output "Starting Install-Chocolatey...Done"
+        Write-Output "Starting Install-Chocolatey...Done"
+    }
 }
 
 function Install-Git {
-    choco install -y git
+    C:\ProgramData\chocolatey\bin\choco.exe install -y git
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
     Write-Output "Install-Git...Done"
 }
@@ -17,7 +20,7 @@ function Install-Git {
 function Install-Python {
     Write-Output "Starting Install-Python..."
 
-    choco install -y python --version 3.10.2
+    C:\ProgramData\chocolatey\bin\choco.exe install -y python --version 3.10.2
 
     # Define the path you want to append
     $pythonPath = "C:\Python310"
