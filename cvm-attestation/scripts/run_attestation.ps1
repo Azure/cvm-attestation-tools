@@ -73,3 +73,4 @@ try {
     Write-Output "EXCEPTION : $errorMessage"
     Write-Output "Source : Line $line in script $scriptName."
 }
+exit 0
