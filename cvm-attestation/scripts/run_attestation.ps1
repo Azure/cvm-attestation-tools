@@ -34,6 +34,7 @@ function Install-Python {
 }
 
 function Install-AttestationApp {
+    Remove-Item -Path .\cvm-attestation-tools -Recurse -Force -ErrorAction SilentlyContinue
     git clone https://github.com/Azure/cvm-attestation-tools.git
     pushd .\cvm-attestation-tools\cvm-attestation\
     # Install attest cli
