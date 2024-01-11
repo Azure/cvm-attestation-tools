@@ -12,6 +12,7 @@ sudo ./install
 ```
 
 ## Uninstall the `attest` CLI Tool
+For uninstalling the cli tool run the following command:
 ```
 pip3 uninstall attest -y
 ```
@@ -19,7 +20,7 @@ pip3 uninstall attest -y
 ## Run CLI Tool
 To run the cli tool use the following command:
 ```
-attest  --c config_sample.json
+sudo attest  --c config_sample.json
 ```
 
 The console output will contain the `Token` returned by the Attestation Provider as well as some of the claims parsed from the token.
