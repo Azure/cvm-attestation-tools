@@ -32,7 +32,7 @@ sudo attest  --c config_tdx.json
 ```
 sudo attest  --c config_tdx_ita.json
 ```
-**IMPORTANTL:** Don't forget to add the `api_key` to the config file.
+**IMPORTANT:** Don't forget to add the `api_key` to the config file.
 
 The console output will contain the `Token` returned by the Attestation Provider as well as some of the claims parsed from the token.
 
