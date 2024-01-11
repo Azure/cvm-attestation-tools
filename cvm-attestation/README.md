@@ -12,15 +12,27 @@ sudo ./install
 ```
 
 ## Uninstall the `attest` CLI Tool
+For uninstalling the cli tool run the following command:
 ```
 pip3 uninstall attest -y
 ```
 
 ## Run CLI Tool
-To run the cli tool use the following command:
+To run the cli tool use one of the following commands:
+### SNP (MAA Only)
 ```
-attest  --c config_sample.json
+sudo attest  --c config_snp.json
 ```
+### TDX with MAA
+```
+sudo attest  --c config_tdx.json
+```
+
+### TDX with Intel Trust Authority
+```
+sudo attest  --c config_tdx_ita.json
+```
+**IMPORTANT:** Don't forget to add the `api_key` to the config file.
 
 The console output will contain the `Token` returned by the Attestation Provider as well as some of the claims parsed from the token.
 
