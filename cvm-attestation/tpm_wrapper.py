@@ -11,6 +11,9 @@ from external.TSS_MSR.src.Tpm import *
 HCL_REPORT_INDEX = '0x01400001'
 HCL_USER_DATA_INDEX = '0x1400002'
 
+AIK_CERT_INDEX = '0x01C101D0'
+AIK_PUB_INDEX = '0x81000003'
+
 
 # write user data to nv index
 def write_to_nv_index(index, user_data):
@@ -85,3 +88,35 @@ def get_hcl_report(user_data):
     print('Error while getting HCL report')
 
   return hcl_report
+
+
+def get_aik_cert():
+  # read aik cert from nv index
+  return read_nv_index(AIK_CERT_INDEX)
+
+
+def get_aik_pub():
+  # read aik pub from nv index
+  return read_nv_index(AIK_PUB_INDEX)
+
+
+def get_pcr_quote(pcr_list):
+  tpm = Tpm()
+  tpm.connect()
+
+  counter, pcr_selection, values = tpm.PCR_Read()
+
+  handle = TPM_HANDLE(int(AIK_PUB_INDEX, 16))
+  pcr_quote = tpm.Quote(handle, 0, TPM_ALG_ID.SHA256, pcr_selection)
+  return pcr_quote
+
+
+def get_pcr_values(pcr_list):
+  tpm = Tpm()
+  tpm.connect()
+
+  counter, pcr_selection, values = tpm.PCR_Read()
+
+  # handle = TPM_HANDLE(int(AIK_PUB_INDEX, 16))
+  # pcr_quote = tpm.Quote(handle, 0, TPM_ALG_ID.SHA256, pcr_selection)
+  return values
