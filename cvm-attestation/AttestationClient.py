@@ -91,13 +91,14 @@ class AttestationClient:
     self.provider = MAAProvider(logger,isolation_type,endpoint) if verifier == Verifier.MAA else ITAProvider(logger,isolation_type,endpoint, api_key) if verifier == Verifier.ITA else None
   
   def attest_guest(self):
-    try:
+    # try:
+      imds_client = ImdsClient(self.logger)
       # Extract Hardware Report and Runtime Data
       hcl_report = get_hcl_report(self.parameters.user_claims)
       report_type = ReportParser.extract_report_type(hcl_report)
       runtime_data = ReportParser.extract_runtimes_data(hcl_report)
       hw_report = ReportParser.extract_hw_report(hcl_report)
-      cert_chain = ImdsClient.get_vcek_certificate()
+      cert_chain = imds_client.get_vcek_certificate()
 
       # Set request data based on the platform
       encoded_report = Encoder.base64url_encode(hw_report)
@@ -111,7 +112,7 @@ class AttestationClient:
       key = get_ephemeral_key(os_info.pcr_list)
       tpm_info = TpmInfo(aik_cert, aik_pub, pcr_quote, sig, pcr_values, key)
       tcg_logs = get_measurements(os_info.type)
-      isolation = IsolationInfo(self.parameters.isolation_type, encoded_report, runtime_data, cert_chain)
+      isolation = IsolationInfo(self.parameters.isolation_type, hw_report, runtime_data, cert_chain)
       param = GuestAttestationParameters(os_info, tcg_logs, tpm_info, isolation)
 
       # Calls attestation provider with the guest evidence
@@ -142,6 +143,7 @@ class AttestationClient:
 
       decrypted_inner_key = \
         decrypt_with_ephemeral_key(encrypted_inner_key_decoded, os_info.pcr_list)
+      print("HERE")
 
       # parse the encrypted token
       encrypted_jwt = response['Jwt']
@@ -166,10 +168,11 @@ class AttestationClient:
       self.logger.info("Decrypted JWT Successfully.")
       self.logger.info('TOKEN:')
       self.logger.info(decrypted_data.decode('utf-8'))
-    except Exception as e:
-        exception_message = "Decryption failed:" + str(e)
-        self.logger.info(exception_message)
-    return True
+
+      return decrypted_data
+    # except Exception as e:
+    #     exception_message = "Decryption failed:" + str(e)
+    #     self.logger.info(exception_message)
 
   def attest_platform(self):
     self.logger.info('Attesting Platform Evidence...')
@@ -187,10 +190,12 @@ class AttestationClient:
     encoded_runtime_data = Encoder.base64url_encode(runtime_data)
     encoded_token = ""
     encoded_hw_evidence = ""
+
+    imds_client = ImdsClient(self.logger)
     if report_type == 'tdx' and isolation_type == IsolationType.TDX:
-      encoded_hw_evidence = ImdsClient.get_td_quote(encoded_report)
+      encoded_hw_evidence = imds_client.get_td_quote(encoded_report)
     elif report_type == 'snp' and isolation_type == IsolationType.SEV_SNP:
-      cert_chain = ImdsClient.get_vcek_certificate()
+      cert_chain = imds_client.get_vcek_certificate()
       snp_report = {
         'SnpReport': encoded_report,
         'VcekCertChain': Encoder.base64url_encode(cert_chain)

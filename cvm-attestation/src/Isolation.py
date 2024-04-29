@@ -37,7 +37,7 @@ class IsolationInfo:
       type = "SevSnp"
 
       hardware_evidence = {
-        'SnpReport': self.snp_report,
+        'SnpReport': base64url_encode(self.snp_report),
         'VcekCertChain': base64url_encode(self.vcek_cert)
       }
       hardware_evidence = json.dumps(hardware_evidence)

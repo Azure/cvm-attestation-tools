@@ -10,7 +10,7 @@ class Logger:
     def __init__(self, name, log_to_file=False, filename='out.log'):
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(funcName)s - %(levelname)s - %(message)s')
 
         if log_to_file:
             # Ensure the directory for the log file exists

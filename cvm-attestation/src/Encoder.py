@@ -83,4 +83,4 @@ class Encoder:
 
     data_bytes = bytes(data, 'utf-8')
     base64_bytes = b64decode(data_bytes)
-    return base64_bytes.decode('utf-8')
+    return base64_bytes

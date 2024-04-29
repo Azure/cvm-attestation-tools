@@ -423,11 +423,6 @@ def decrypt_with_ephemeral_key(encrypted_data, pcr_list):
   print('Digest Size: ', len(pcr_digest))
 
   in_scheme =  TPMT_RSA_SCHEME(TPMS_SCHEME_RSAES()).details
-  # print('Size of Enc Data: ', key_out_public.outPublic.parameters.scheme)
-  # print('Size of Enc Data: ', in_scheme.scheme)
-
-  with open('secret.bin.enc', 'wb') as file:
-    file.write(encrypted_data)
 
   # print(key_out_public.outPublic.parameters.symmetric.keyBits)
 
@@ -456,13 +451,14 @@ def decrypt_with_ephemeral_key(encrypted_data, pcr_list):
   # encryption_key = idKey.outPublic.toBytes()
 
   try:
-    encrypted = tpm.withSession(sess).RSA_Encrypt(persistent, bytes(data_plain, 'utf-8'), TPMS_NULL_ASYM_SCHEME(), None)
-    print('Encrypted Data Bytes: ', encrypted)
+    # encrypted = tpm.withSession(sess).RSA_Encrypt(persistent, bytes(data_plain, 'utf-8'), TPMS_NULL_ASYM_SCHEME(), None)
+    # print('Encrypted Data Bytes: ', encrypted)
     decrypted_data \
-      = tpm.withSession(sess).RSA_Decrypt(persistent, encrypted_data, TPMS_NULL_ASYM_SCHEME(), None)
+      = tpm.withSession(sess).RSA_Decrypt(persistent, encrypted_data, TPMS_SCHEME_RSAES(), None)
     print('Decrypted Inner Decryption Key...')
-    # print(resp)
+    print(decrypted_data)
 
+    tpm.close()
     return decrypted_data
   except Exception as e:
     print("Exception: ", e)

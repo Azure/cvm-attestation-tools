@@ -7,7 +7,6 @@ import click
 from AttestationClient import AttestationClient, AttestationClientParameters, Verifier
 from src.Isolation import IsolationType
 from src.Logger import Logger
-import os
 
 
 def parse_config_file(filename):
@@ -33,38 +32,54 @@ AttestationProviderLookup = {
 }
 
 
+class AttestException(Exception):
+  pass
+
 @click.command()
 @click.option('--c', type=str, help = 'Config json file')
 @click.option('--t', type=click.Choice(['Guest', 'Platform'], case_sensitive=False), default='Platform', help='Attestation type: Guest or Platform (Default)')
 def attest(c, t):
+  # create a new console logger
+  logger = Logger('logger').get_logger()
+  logger.info("Attestation started...")
+  logger.info(c)
 
-  try:
-    attestation_type = t
-    # create a new console logger
-    logger = Logger('logger').get_logger()
-    logger.info("Attestation started...")
-    logger.info(c)
+  # try:
+  attestation_type = t
 
-    # creates an attestation parameters based on user's config
-    config_json = parse_config_file(c)
-    provider_tag = config_json['attestation_provider']
-    endpoint = config_json['attestation_url']
-    api_key = config_json['api_key']
+  # creates an attestation parameters based on user's config
+  config_json = parse_config_file(c)
+  provider_tag = config_json['attestation_provider']
+  endpoint = config_json['attestation_url']
+  api_key = config_json['api_key']
 
-    # Build attestation client parameters
-    isolation_type = IsolationType.get(provider_tag, IsolationType['default'])
-    provider = Verifier.get(provider_tag, Verifier['default'])
-    client_parameters = AttestationClientParameters(endpoint, provider, isolation_type, api_key) 
+  # Build attestation client parameters
+  isolation_type = IsolationTypeLookup.get(provider_tag, IsolationTypeLookup['default'])
+  provider = AttestationProviderLookup.get(provider_tag, AttestationProviderLookup['default'])
+  client_parameters = AttestationClientParameters(endpoint, provider, isolation_type, api_key) 
 
-    # Attest based on user configuration
-    attestation_client = AttestationClient(logger, client_parameters)
+  # Attest based on user configuration
+  attestation_client = AttestationClient(logger, client_parameters)
 
-    if attestation_type.to_lower() == str('Guest').to_lower():
-      attestation_client.attest_guest()
-    elif attestation_type.to_lower() == str('Platform').to_lower():
-      attestation_client.attest_platform()
-  except Exception as e:
-    logger.info('Exception in attest: ', e)
+  if attestation_type.lower() == str('Guest').lower():
+    # if attesting the guest we need to make sure the right endpoint is used
+    if 'attest/AzureGuest' in endpoint:
+      token = attestation_client.attest_guest()
+    else:
+      raise AttestException('Invalid endpoint. Make sure endpoint is correct for attesting the Guest')
+  elif attestation_type.lower() == str('Platform').lower():
+    if 'attest/SevSnpVm' in endpoint:
+      token = attestation_client.attest_platform()
+      logger.info('TOKEN:')
+      logger.info(token)
+    else:
+      raise AttestException('Invalid endpoint. Make sure endpoint is correct for attesting the Platform')
+  else:
+    raise AttestException('Invalid parameter for attestation type')
+    
+    
+  # except Exception as e:
+  #   logger.info(f'Exception in attest: {e}')
 
 
   # # Extract data from HCL report
