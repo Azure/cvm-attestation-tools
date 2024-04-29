@@ -1,3 +1,8 @@
+# test_AttestationProvider.py
+#
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import pytest
 from src.AttestationProvider import MAAProvider
 from src.Isolation import IsolationType
@@ -41,7 +46,7 @@ def test_maa_provider_invalid_isolation_type():
   assert "Unsupported isolation type" in str(excinfo.value)
 
 
-def test_create_payload_TDX(maa_provider):
+def test_create_payload_tdx(maa_provider):
   evidence = 'dummy_evidence'
   runtimes_data = 'dummy_runtimes_data'
 
@@ -62,7 +67,7 @@ def test_create_payload_TDX(maa_provider):
   assert payload == expected_payload
 
 
-def test_create_payload_SEV_SNP(maa_provider):
+def test_create_payload_sev_snp(maa_provider):
   evidence = 'dummy_evidence'
   runtimes_data = 'dummy_runtimes_data'
 

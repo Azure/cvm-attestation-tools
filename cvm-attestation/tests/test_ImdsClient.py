@@ -1,4 +1,4 @@
-# test_imds.py
+# test_ImdsClient.py
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
