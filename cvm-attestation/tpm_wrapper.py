@@ -151,19 +151,9 @@ def get_pcr_quote(pcr_list):
 
   pcr_select = get_pcr_select(pcr_list)
   sign_handle = TPM_HANDLE(int(AIK_PUB_INDEX, 16) + 3)
-  # tpm.allowErrors().ReadPublic(handle)
-  # cleanSlots(tpm, TPM_HT.PERSISTENT)
-
-  # print(out.authPolicy)
   pcr_quote = tpm.Quote(sign_handle, None, TPMS_NULL_SIG_SCHEME(), pcr_select)
-
   quote_buf = pcr_quote.quoted.toBytes()
-  # print(pcr_quote.quoted.attested.pcrSelect.hash)
-  # print(base64_encode(sha256(pcr_quote.quoted.attested.hash).digest()))
-  print('Quoted: ', ''.join('{:02x}'.format(x) for x in quote_buf))
-
   sig_bytes = pcr_quote.signature.sig
-  print('Sig: ', ''.join('{:02x}'.format(x) for x in sig_bytes))
 
   tpm.close()
 
@@ -188,7 +178,7 @@ def get_pcr_values(pcr_list):
   tpm = Tpm()
   tpm.connect()
   
-  pcr_select = get_pcr_select(pcr_list) #[TPMS_PCR_SELECTION(TPM_ALG_ID.SHA256, select)]
+  pcr_select = get_pcr_select(pcr_list)
 
   pcr_values = []
   values = tpm.PCR_Read(pcr_select)
@@ -237,13 +227,6 @@ def create_ephemeral_key(pcr_list):
             TPMS_RSA_PARMS(symWrapperDef, TPMS_ENC_SCHEME_RSAES(), 2048, 0),
             TPM2B_PUBLIC_KEY_RSA())
 
-  print('Key Size: ', in_public.parameters.scheme)
-  print('Public Type: ', in_public.type)
-  print('Parameters: ', in_public.parameters)
-  # in_public.parameters.symmetric.keyBits = 256
-  # print('Key Size After: ', in_public.parameters.symmetric.keyBits)
-  sign = TPM_HANDLE(int(AIK_PUB_INDEX, 16) + 3)
-
   # Start a policy session to be used with ActivateCredential()
   nonceCaller = crypto.randomBytes(20)
   respSas = tpm.StartAuthSession(None, None, nonceCaller, None, TPM_SE.TRIAL, NullSymDef, TPM_ALG_ID.SHA256)
@@ -258,7 +241,6 @@ def create_ephemeral_key(pcr_list):
   print('DRS >> PolicyGetDigest() returned ' + str(tpm.lastResponseCode))
   print('Digest Size: ', len(pcr_digest))
 
-  session = NullPwSession
   
   print(dupPolicyDigest)
   in_public.authPolicy = dupPolicyDigest
@@ -272,13 +254,6 @@ def create_ephemeral_key(pcr_list):
   if (not idKey.getHandle()):
       raise(Exception("CreatePrimary failed for " + in_public))
 
-  # encryption_key = idKey.outPublic.asTpm2B() # TpmBuffer(idKey.outPublic.asTpm2B()).createObj(TPM2B_PUBLIC).asTpm2B()
-  # print(idKey.outPublic.asTpm2B())
-  # handle = tpm.CreatePrimary(primary_handle, TPMS_SENSITIVE_CREATE(), in_public, None, pcr_select)
-  # out_public = handle
-
-  
-  
   # clear the tpm slots
   cleanSlots(tpm, TPM_HT.TRANSIENT)
   cleanSlots(tpm, TPM_HT.LOADED_SESSION)
@@ -333,48 +308,16 @@ def get_ephemeral_key(pcr_list):
   print(dupPolicyDigest)
   in_public.authPolicy = dupPolicyDigest
 
-
-  print(base64_encode(bytes.fromhex(pcr_digest)))
-
   idKey = tpm.withSession(NullPwSession)  \
               .CreatePrimary(Owner, TPMS_SENSITIVE_CREATE(), in_public, None, pcr_select)
   print('DRS >> CreatePrimary(idKey) returned ' + str(tpm.lastResponseCode))
   # encryption_key = idKey.outPublic.toBytes()
 
-  encryption_key = idKey.outPublic.asTpm2B() # TpmBuffer(idKey.outPublic.asTpm2B()).createObj(TPM2B_PUBLIC).asTpm2B()
-  # print(idKey.outPublic.asTpm2B())
-  # handle = tpm.CreatePrimary(primary_handle, TPMS_SENSITIVE_CREATE(), in_public, None, pcr_select)
-  # out_public = handle
+  encryption_key = idKey.outPublic.asTpm2B()
  
   print('CreatePrimary returned ' + str(tpm.lastResponseCode))
   if (not idKey.getHandle()):
       raise(Exception("CreatePrimary failed for " + in_public))
-  # h = tpm.Create(handle.getHandle(), TPMS_SENSITIVE_CREATE(), test, None, None)
-  # h = tpm.Load(handle.getHandle(), h.outPrivate, h.outPublic)
-  
-  # outPub = tpm.ReadPublic(handle.getHandle())
-  # print(out_public.outPublic.unique.buffer)
-  # print("Testing: ", ek)
-  
-  # encryption_key = out_public.outPublic.toBytes()
-  # print('Enc Key: ', ''.join('{:02x}'.format(x) for x in encryption_key))
-  # print('Enc Key Length: ', len(encryption_key))
-  # Assuming 'public_key_bytes' is your RSA public key bytes
-  # public_key = serialization.load_pem_public_key(encryption_key, backend=default_backend())
-  # Load your key (public or private) from a file, bytes, or other sources
-  # with open("public.bin", "rb") as key_file:
-  #     key = serialization.load_der_public_key(
-  #         key_file.read(), 
-  #         backend=default_backend()
-  #     )
-      # key = key_file.read()
-      # print(key)
-      # print('Key Length: ', len(key))
-  # Check if the loaded key is an instance of RSAPublicKey or RSAPrivateKey
-  # if isinstance(public_key, rsa.RSAPublicKey) or isinstance(public_key, rsa.RSAPrivateKey):
-  #     print("The key is an RSA key.")
-  # else:
-  #     print("The key is not an RSA key.")
 
   response = tpm.Certify(idKey.getHandle(), sign, 0, TPMS_NULL_ASYM_SCHEME())
   print('Dat: ', response.certifyInfo.attested)
@@ -405,11 +348,7 @@ def decrypt_with_ephemeral_key(encrypted_data, pcr_list):
 
   pcrs = get_pcr_values(pcr_list)
 
-  # create new ephemeral key in the TPM to decrypt 
-  # idKey = create_ephemeral_key(pcr_list)
-  # print(key_out_public.)
   persistent = TPM_HANDLE(0x80000000)
-  # Start a policy session to be used with ActivateCredential()
   nonceCaller = crypto.randomBytes(20)
   respSas = tpm.StartAuthSession(None, None, nonceCaller, None, TPM_SE.POLICY, NullSymDef, TPM_ALG_ID.SHA256)
   hSess = respSas.handle

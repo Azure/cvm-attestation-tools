@@ -8,7 +8,8 @@ import platform
 
 DISTRO_NAME_KEY = "NAME";
 DISTRO_VERSION_KEY = "VERSION_ID";
-LINUX_OS_BUILD = "NotApplication";
+LINUX_OS_BUILD = "NotApplication"
+WINDOWS_OS_BUILD = "NotApplication"
 
 # List of PCR values for each OS Type
 LINUX_PCR_LIST = [0, 1, 2, 3, 4, 5, 6, 7]
@@ -33,7 +34,11 @@ class OsInfo:
       self.pcr_list = LINUX_PCR_LIST
       self.parse_linux_os_info(self.get_linux_os_info())
     elif self.type == 'Windows':
-      pass
+      self.distro_name = "Microsoft"
+      self.build = WINDOWS_OS_BUILD
+      self.pcr_list = WINDOWS_PCR_LIST
+      self.major_version = 10
+      self.minor_version = 0
     else:
       raise OsTypeException('Unknown OS')
 
