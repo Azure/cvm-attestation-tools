@@ -46,7 +46,7 @@ class MAAProvider(IAttestationProvider):
     if not parsed_endpoint.scheme or not parsed_endpoint.netloc:
       raise ValueError(f"Invalid endpoint: {endpoint}. Endpoint must be a valid URL.")
 
-    self.logger = logger
+    self.log = logger
     self.isolation = isolation
     self.endpoint = endpoint
 
@@ -57,7 +57,7 @@ class MAAProvider(IAttestationProvider):
     """
 
     try:
-      self.logger.info("Sending attestation request to provider...")
+      self.log.info("Sending attestation request to provider...")
 
       # Sends request to MAA for attesting the guest
       response = requests.post(
@@ -68,16 +68,16 @@ class MAAProvider(IAttestationProvider):
 
       # Check the response from the server
       if response.status_code == 200:
-        self.logger.info("Received token from attestation provider")
+        self.log.info("Received token from attestation provider")
         response_json = json.loads(response.text)
         encoded_token = response_json['token']
 
         return encoded_token
       else:
-        self.logger.error(f"Failed to verify evidence, status code: {response.status_code}, error: {response.text}")
+        self.log.error(f"Failed to verify evidence, status code: {response.status_code}, error: {response.text}")
         raise ValueError(f"Unexpected status code: {response.status_code}, error: {response.text}")
     except RequestException as e:
-      self.logger.error(f"Request failed: {e}")
+      self.log.error(f"Request failed: {e}")
       raise SystemError(f"Request failed: {e}")
 
 
@@ -117,7 +117,7 @@ class MAAProvider(IAttestationProvider):
     try:
       payload = self.create_payload(evidence, runtime_data)
 
-      self.logger.info("Sending attestation request to provider...")
+      self.log.info("Sending attestation request to provider...")
 
       # Sends request to MAA for attesting the guest
       response = requests.post(
@@ -128,16 +128,16 @@ class MAAProvider(IAttestationProvider):
 
       # Check the response from the server
       if response.status_code == 200:
-        self.logger.info("Received token from attestation provider")
+        self.log.info("Received token from attestation provider")
         response_json = json.loads(response.text)
         encoded_token = response_json['token']
 
         return encoded_token
       else:
-        self.logger.error(f"Failed to verify evidence, status code: {response.status_code}, error: {response.text}")
+        self.log.error(f"Failed to verify evidence, status code: {response.status_code}, error: {response.text}")
         raise ValueError(f"Unexpected status code: {response.status_code}, error: {response.text}")
     except RequestException as e:
-      self.logger.error(f"Request failed: {e}")
+      self.log.error(f"Request failed: {e}")
       raise SystemError(f"Request failed: {e}")
 
 
@@ -152,7 +152,7 @@ class ITAProvider(IAttestationProvider):
     if not parsed_endpoint.scheme or not parsed_endpoint.netloc:
       raise ValueError(f"Invalid endpoint: {endpoint}. Endpoint must be a valid URL.")
 
-    self.logger = logger
+    self.log = logger
     self.isolation = isolation
     self.endpoint = endpoint
     self.api_key = api_key
@@ -192,7 +192,7 @@ class ITAProvider(IAttestationProvider):
       headers['x-api-key'] = self.api_key
       payload = self.create_payload(evidence, runtime_data)
 
-      self.logger.info("Sending attestation request to provider...")
+      self.log.info("Sending attestation request to provider...")
 
       # Sends request to MAA for attesting the guest
       response = requests.post(
@@ -203,14 +203,14 @@ class ITAProvider(IAttestationProvider):
 
       # Check the response from the server
       if response.status_code == 200:
-        self.logger.info("Received token from attestation provider")
+        self.log.info("Received token from attestation provider")
         response_json = json.loads(response.text)
         encoded_token = response_json['token']
 
         return encoded_token
       else:
-        self.logger.error(f"Failed to verify evidence, status code: {response.status_code}, error: {response.text}")
+        self.log.error(f"Failed to verify evidence, status code: {response.status_code}, error: {response.text}")
         raise ValueError(f"Unexpected status code: {response.status_code}, error: {response.text}")
     except RequestException as e:
-      self.logger.error(f"Request failed: {e}")
+      self.log.error(f"Request failed: {e}")
       raise SystemError(f"Request failed: {e}")

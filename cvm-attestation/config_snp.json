@@ -1,5 +1,5 @@
 {
-    "attestation_url": "https://sharedweu.weu.attest.azure.net/attest/SevSnpVm?api-version=2022-08-01",
+    "attestation_url": "https://sharedweu.weu.attest.azure.net/attest/AzureGuest?api-version=2020-10-01",
     "attestation_provider": "maa_snp",
     "api_key": "",
     "enable_metrics": false,

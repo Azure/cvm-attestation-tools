@@ -78,7 +78,7 @@ class AttestationClientParameters:
     self.user_claims = claims
 
 
-class AttestationClient:
+class AttestationClient():
   def __init__(self, logger: Logger, parameters: AttestationClientParameters):
     verifier = parameters.verifier
     isolation_type = parameters.isolation_type
@@ -86,96 +86,95 @@ class AttestationClient:
     api_key = parameters.api_key
 
     self.parameters = parameters
-    self.logger = logger
+    self.log = logger
 
     self.provider = MAAProvider(logger,isolation_type,endpoint) if verifier == Verifier.MAA else ITAProvider(logger,isolation_type,endpoint, api_key) if verifier == Verifier.ITA else None
   
   def attest_guest(self):
-    # try:
-      imds_client = ImdsClient(self.logger)
-      # Extract Hardware Report and Runtime Data
-      hcl_report = get_hcl_report(self.parameters.user_claims)
-      report_type = ReportParser.extract_report_type(hcl_report)
-      runtime_data = ReportParser.extract_runtimes_data(hcl_report)
-      hw_report = ReportParser.extract_hw_report(hcl_report)
-      cert_chain = imds_client.get_vcek_certificate()
+    """
+    Attest the Guest
+    """
+    imds_client = ImdsClient(self.log)
+    # Extract Hardware Report and Runtime Data
+    hcl_report = get_hcl_report(self.parameters.user_claims)
+    report_type = ReportParser.extract_report_type(hcl_report)
+    runtime_data = ReportParser.extract_runtimes_data(hcl_report)
+    hw_report = ReportParser.extract_hw_report(hcl_report)
+    cert_chain = imds_client.get_vcek_certificate()
 
-      # Set request data based on the platform
-      encoded_report = Encoder.base64url_encode(hw_report)
-      encoded_runtime_data = Encoder.base64url_encode(runtime_data)
+    # Collect guest attestation parameters
+    os_info = OsInfo()
+    aik_cert = get_aik_cert()
+    aik_pub = get_aik_pub()
+    pcr_quote, sig = get_pcr_quote(os_info.pcr_list)
+    pcr_values = get_pcr_values(os_info.pcr_list)
+    key = get_ephemeral_key(os_info.pcr_list)
+    tpm_info = TpmInfo(aik_cert, aik_pub, pcr_quote, sig, pcr_values, key)
+    tcg_logs = get_measurements(os_info.type)
+    isolation = IsolationInfo(self.parameters.isolation_type, hw_report, runtime_data, cert_chain)
+    param = GuestAttestationParameters(os_info, tcg_logs, tpm_info, isolation)
 
-      os_info = OsInfo()
-      aik_cert = get_aik_cert()
-      aik_pub = get_aik_pub()
-      pcr_quote, sig = get_pcr_quote(os_info.pcr_list)
-      pcr_values = get_pcr_values(os_info.pcr_list)
-      key = get_ephemeral_key(os_info.pcr_list)
-      tpm_info = TpmInfo(aik_cert, aik_pub, pcr_quote, sig, pcr_values, key)
-      tcg_logs = get_measurements(os_info.type)
-      isolation = IsolationInfo(self.parameters.isolation_type, hw_report, runtime_data, cert_chain)
-      param = GuestAttestationParameters(os_info, tcg_logs, tpm_info, isolation)
+    # Calls attestation provider with the guest evidence
+    request = {
+      "AttestationInfo": Encoder.base64url_encode_string(param.toJson())
+    }
+    encoded_response = self.provider.attest_guest(request)
 
-      # Calls attestation provider with the guest evidence
-      request = {
-        "AttestationInfo": Encoder.base64url_encode_string(param.toJson())
-      }
-      encoded_response = self.provider.attest_guest(request)
+    self.log.info('Parsing encoded token...')
 
-      self.logger.info('Parsing encoded token...')
+    # decode the response
+    response = urlsafe_b64decode(encoded_response).decode('utf-8')
+    response = json.loads(response)
 
-      # decode the response
-      response = urlsafe_b64decode(encoded_response).decode('utf-8')
-      response = json.loads(response)
+    # parse encrypted inner key
+    encrypted_inner_key = response['EncryptedInnerKey']
+    encrypted_inner_key = json.dumps(encrypted_inner_key)
+    encrypted_inner_key_decoded = Encoder.base64decode(encrypted_inner_key)
 
-      # parse encrypted inner key
-      encrypted_inner_key = response['EncryptedInnerKey']
-      encrypted_inner_key = json.dumps(encrypted_inner_key)
-      encrypted_inner_key_decoded = Encoder.base64decode(encrypted_inner_key)
+    # parse Encryption Parameters
+    encryption_params_json = response['EncryptionParams']
+    iv = json.dumps(encryption_params_json['Iv'])
+    iv = Encoder.base64decode(iv)
 
-      # parse Encryption Parameters
-      encryption_params_json = response['EncryptionParams']
-      iv = json.dumps(encryption_params_json['Iv'])
-      iv = Encoder.base64decode(iv)
+    auth_data = response['AuthenticationData']
+    auth_data = json.dumps(auth_data)
+    auth_data = Encoder.base64decode(auth_data)
 
-      auth_data = response['AuthenticationData']
-      auth_data = json.dumps(auth_data)
-      auth_data = Encoder.base64decode(auth_data)
+    decrypted_inner_key = \
+      decrypt_with_ephemeral_key(encrypted_inner_key_decoded, os_info.pcr_list)
+    print("HERE")
 
-      decrypted_inner_key = \
-        decrypt_with_ephemeral_key(encrypted_inner_key_decoded, os_info.pcr_list)
-      print("HERE")
+    # parse the encrypted token
+    encrypted_jwt = response['Jwt']
+    encrypted_jwt = json.dumps(encrypted_jwt)
+    encrypted_jwt = Encoder.base64decode(encrypted_jwt)
 
-      # parse the encrypted token
-      encrypted_jwt = response['Jwt']
-      encrypted_jwt = json.dumps(encrypted_jwt)
-      encrypted_jwt = Encoder.base64decode(encrypted_jwt)
+    # Your AES key
+    key = decrypted_inner_key
 
-      # Your AES key
-      key = decrypted_inner_key
+    # Create an AESGCM object with the generated key
+    aesgcm = AESGCM(key)
 
-      # Create an AESGCM object with the generated key
-      aesgcm = AESGCM(key)
+    self.log.info('Decrypting JWT...')
 
-      self.logger.info('Decrypting JWT...')
+    associated_data = bytearray(b'Transport Key')
 
-      associated_data = bytearray(b'Transport Key')
+    # NOTE: authentication data is part of the cipher's last 16 bytes
+    cipher_message = encrypted_jwt + auth_data
 
-      # NOTE: authentication data is part of the cipher's last 16 bytes
-      cipher_message = encrypted_jwt + auth_data
+    # Decrypt the token using the same key, nonce, and associated data
+    decrypted_data = aesgcm.decrypt(iv, cipher_message, bytes(associated_data))
+    self.log.info("Decrypted JWT Successfully.")
+    self.log.info('TOKEN:')
+    self.log.info(decrypted_data.decode('utf-8'))
 
-      # Decrypt the token using the same key, nonce, and associated data
-      decrypted_data = aesgcm.decrypt(iv, cipher_message, bytes(associated_data))
-      self.logger.info("Decrypted JWT Successfully.")
-      self.logger.info('TOKEN:')
-      self.logger.info(decrypted_data.decode('utf-8'))
+    return decrypted_data
 
-      return decrypted_data
-    # except Exception as e:
-    #     exception_message = "Decryption failed:" + str(e)
-    #     self.logger.info(exception_message)
 
   def attest_platform(self):
-    self.logger.info('Attesting Platform Evidence...')
+    """
+    """
+    self.log.info('Attesting Platform Evidence...')
 
     isolation_type = self.parameters.isolation_type 
 
@@ -191,7 +190,7 @@ class AttestationClient:
     encoded_token = ""
     encoded_hw_evidence = ""
 
-    imds_client = ImdsClient(self.logger)
+    imds_client = ImdsClient(self.log)
     if report_type == 'tdx' and isolation_type == IsolationType.TDX:
       encoded_hw_evidence = imds_client.get_td_quote(encoded_report)
     elif report_type == 'snp' and isolation_type == IsolationType.SEV_SNP:
@@ -204,7 +203,7 @@ class AttestationClient:
       snp_report = bytearray(snp_report.encode('utf-8'))
       encoded_hw_evidence = Encoder.base64url_encode(snp_report)
     else:
-      self.logger.info('Invalid Hardware Report Type')
+      self.log.info('Invalid Hardware Report Type')
 
     # verify hardware evidence
     encoded_token = self.provider.attest_platform(encoded_hw_evidence, encoded_runtime_data)
