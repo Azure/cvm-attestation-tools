@@ -8,7 +8,6 @@ from click.testing import CliRunner
 from attest import main
 
 def test_attest_successfully():
-
     runner = CliRunner()
     runner.invoke(main, ['--c', 'somefile.json'])
     assert True

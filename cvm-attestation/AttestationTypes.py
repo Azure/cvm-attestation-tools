@@ -1,7 +1,8 @@
-# tpm_wrapper.py
+# AttestationTypes.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+
 import json
 from enum import Enum
 from base64 import urlsafe_b64encode, b64encode
