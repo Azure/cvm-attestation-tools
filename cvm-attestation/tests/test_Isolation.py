@@ -4,13 +4,13 @@
 # Licensed under the MIT license.
 
 import pytest
-from your_module import IsolationInfo, IsolationType
+from src.Isolation import IsolationInfo, IsolationType
 
 # Test case for the IsolationInfo class
 def test_isolation_info():
     # Create an instance of IsolationInfo with default values
     default_info = IsolationInfo()
-    assert default_info.isolation_type == IsolationType.TRUSTED_LAUNCH
+    assert default_info.isolation_type == IsolationType.UNDEFINED
     assert default_info.snp_report == b''
     assert default_info.runtime_data == b''
     assert default_info.vcek_cert == ""
@@ -26,7 +26,3 @@ def test_isolation_info():
     assert custom_info.snp_report == b'some_report'
     assert custom_info.runtime_data == b'some_data'
     assert custom_info.vcek_cert == 'some_cert'
-
-# This is necessary for the test discovery of pytest
-if __name__ == "__main__":
-    pytest.main()
