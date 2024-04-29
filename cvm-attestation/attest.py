@@ -4,55 +4,10 @@
 from base64 import urlsafe_b64encode, urlsafe_b64decode, b64decode
 import json
 import click
-from src.report_parser import *
-from AttestationClient import *
-from src.OsInfo import OsInfo
-from src.Logger import Logger
-from src.measurements import get_measurements
+from AttestationClient import AttestationClient, AttestationClientParameters, Verifier
 from src.Isolation import IsolationType
-from AttestationTypes import *
+from src.Logger import Logger
 import os
-
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import padding
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-
-
-def encrypt(key, plaintext, associated_data):
-    # Generate a random 96-bit IV.
-    iv = os.urandom(12)
-
-    # Construct an AES-GCM Cipher object with the given key and a
-    # randomly generated IV.
-    encryptor = Cipher(
-        algorithms.AES(key),
-        modes.GCM(iv),
-    ).encryptor()
-
-    # associated_data will be authenticated but not encrypted,
-    # it must also be passed in on decryption.
-    encryptor.authenticate_additional_data(associated_data)
-
-    # Encrypt the plaintext and get the associated ciphertext.
-    # GCM does not require padding.
-    ciphertext = encryptor.update(plaintext) + encryptor.finalize()
-
-    return (iv, ciphertext, encryptor.tag)
-
-def base64url_encode(data):
-  return str(urlsafe_b64encode(data).rstrip(b'='), "utf-8")
-
-# Function to encode a string to base64url
-def base64url_encode_string(input_string):
-    # Convert string to bytes
-    bytes_to_encode = input_string.encode('utf-8')
-    # Perform base64 encoding
-    base64_bytes = b64encode(bytes_to_encode)
-    # Convert to base64url by replacing '+' with '-' and '/' with '_'
-    base64url_bytes = base64_bytes.replace(b'+', b'-').replace(b'/', b'_')
-    # Return the base64url encoded string
-    return base64url_bytes.decode('utf-8').rstrip('=')
 
 
 def parse_config_file(filename):
@@ -79,10 +34,12 @@ AttestationProviderLookup = {
 
 
 @click.command()
-@click.option('--c', type=str)
-def main(c):
+@click.option('--c', type=str, help = 'Config json file')
+@click.option('--t', type=click.Choice(['Guest', 'Platform'], case_sensitive=False), default='Platform', help='Attestation type: Guest or Platform (Default)')
+def attest(c, t):
 
   try:
+    attestation_type = t
     # create a new console logger
     logger = Logger('logger').get_logger()
     logger.info("Attestation started...")
@@ -93,17 +50,19 @@ def main(c):
     provider_tag = config_json['attestation_provider']
     endpoint = config_json['attestation_url']
     api_key = config_json['api_key']
+
+    # Build attestation client parameters
     isolation_type = IsolationType.get(provider_tag, IsolationType['default'])
     provider = Verifier.get(provider_tag, Verifier['default'])
     client_parameters = AttestationClientParameters(endpoint, provider, isolation_type, api_key) 
 
-
-    # PCR values for Linux Guest
-    LINUX_PCR_LIST = [0, 1, 2, 3, 4, 5, 6, 7]
-    WINDOWS_PCR_LIST = [0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 13, 14]
-
+    # Attest based on user configuration
     attestation_client = AttestationClient(logger, client_parameters)
-    attestation_client.attest_platform()
+
+    if attestation_type.to_lower() == str('Guest').to_lower():
+      attestation_client.attest_guest()
+    elif attestation_type.to_lower() == str('Platform').to_lower():
+      attestation_client.attest_platform()
   except Exception as e:
     logger.info('Exception in attest: ', e)
 
@@ -217,4 +176,4 @@ def main(c):
   #   logger.info('Exception: ', e)
 
 if __name__ == "__main__":
-  main()
+  attest()
