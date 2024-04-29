@@ -3,10 +3,15 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from  hashlib import sha512
+from hashlib import sha512, sha256
 import json
 from external.TSS_MSR.src.Tpm import *
-import types
+from AttestationTypes import *
+from external.TSS_MSR.src.Crypt import Crypto as crypto
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 
 HCL_REPORT_INDEX = '0x01400001'
@@ -15,6 +20,21 @@ HCL_USER_DATA_INDEX = '0x1400002'
 AIK_CERT_INDEX = '0x01C101D0'
 AIK_PUB_INDEX = '0x81000000'
 
+key_out_public = CreatePrimaryResponse()
+
+def sha256_hash_update(data_chunks):
+    # Initialize the SHA-256 hash context
+    sha256_ctx = sha256()
+
+    # Update the context with each chunk of data
+    for pcr in data_chunks:
+        print(pcr.index, pcr.digest)
+        sha256_ctx.update(pcr.digest)
+
+    # Get the final hash value
+    final_hash = sha256_ctx.hexdigest()
+    print(final_hash)
+    return final_hash
 
 # write user data to nv index
 def write_to_nv_index(index, user_data):
@@ -79,15 +99,22 @@ def read_nv_index(index):
 def read_public(index):
   tpm = Tpm()
   tpm.connect()
-  handle = TPM_HANDLE(int(index, 16) + 3)
-  out = tpm.ReadPublic(handle)
-  # buf = out.fromTpm(out.outPublic)
-  # print()
-  # print(out.name)
-  # print(''.join('{:02x}'.format(x) for x in out.outPublic.toBytes()))
+  cleanSlots(tpm, TPM_HT.TRANSIENT)
+  cleanSlots(tpm, TPM_HT.LOADED_SESSION)
+
+  handle = TPM_HANDLE(index)
+  # tpm.allowErrors().EvictControl(TPM_HANDLE.OWNER, handle, handle)
+  outPub = tpm.allowErrors().ReadPublic(handle)
+  h = outPub
+  if (tpm.lastResponseCode == TPM_RC.SUCCESS):
+      print("Persistent key 0x" + hex(handle.handle) + " already exists")
+  else:
+      print("Failed to read Public Area")
+  # outPub = outPub.outPublic
+  print(''.join('{:02x}'.format(x) for x in outPub.toBytes()))
 
   tpm.close()
-  return out.outPublic.toBytes()
+  return outPub.toBytes()
 
 
 def get_hcl_report(user_data):
@@ -115,58 +142,53 @@ def get_aik_cert():
 
 def get_aik_pub():
   # read aik pub from nv index
-  return read_public(AIK_PUB_INDEX)
+  return read_public((int(AIK_PUB_INDEX, 16) + 3))
 
 
 def get_pcr_quote(pcr_list):
   tpm = Tpm()
   tpm.connect()
 
+  pcr_select = get_pcr_select(pcr_list)
+  sign_handle = TPM_HANDLE(int(AIK_PUB_INDEX, 16) + 3)
+  # tpm.allowErrors().ReadPublic(handle)
+  # cleanSlots(tpm, TPM_HT.PERSISTENT)
+
+  # print(out.authPolicy)
+  pcr_quote = tpm.Quote(sign_handle, None, TPMS_NULL_SIG_SCHEME(), pcr_select)
+
+  quote_buf = pcr_quote.quoted.toBytes()
+  # print(pcr_quote.quoted.attested.pcrSelect.hash)
+  # print(base64_encode(sha256(pcr_quote.quoted.attested.hash).digest()))
+  print('Quoted: ', ''.join('{:02x}'.format(x) for x in quote_buf))
+
+  sig_bytes = pcr_quote.signature.sig
+  print('Sig: ', ''.join('{:02x}'.format(x) for x in sig_bytes))
+
+  tpm.close()
+
+  return quote_buf, sig_bytes
+
+
+def get_pcr_select(pcr_list):
   pcr_mask = 0
   for i in pcr_list:
     pcr_mask |= 1 << i
 
   select = [None] * 3
-  select[0] = pcr_mask & 0xFF
-  select[1] = pcr_mask & 0xFF
-  select[2] = pcr_mask & 0xFF
+  select[0] = (pcr_mask & 0xFF) 
+  select[1] = (pcr_mask & 0xFF00) >> 8
+  select[2] = (pcr_mask & 0xFF0000) >> 16
 
-  
   pcr_select = [TPMS_PCR_SELECTION(TPM_ALG_ID.SHA256, select)]
-
-  handle = TPM_HANDLE(int(AIK_PUB_INDEX, 16) + 3)
-  pcr_quote = tpm.Quote(handle, 0, TPMS_NULL_SIG_SCHEME(), pcr_select)
-  quote = {}
-  print(pcr_quote.quoted)
-  print(pcr_quote.signature)
-  quote_buf = pcr_quote.quoted.toBytes()
-  print('Quoted: ', ''.join('{:02x}'.format(x) for x in quote_buf))
-
-  signature = pcr_quote.signature.sig
-  hash = pcr_quote.signature.hash
-  sig_bytes = pcr_quote.signature.toBytes()
-  print('Alg: ', hash)
-  print('Sig: ', ''.join('{:02x}'.format(x) for x in sig_bytes))
-
-  return quote_buf, sig_bytes
+  return pcr_select
 
 
 def get_pcr_values(pcr_list):
   tpm = Tpm()
   tpm.connect()
-
-  pcr_mask = 0
-  for i in pcr_list:
-    print(i)
-    pcr_mask |= 1 << i
-
-  select = [None] * 3
-  select[0] = pcr_mask & 0xFF00 >> 8
-  select[1] = pcr_mask & 0xFF0000 >> 16
-  select[2] = pcr_mask & 0xFF000000 >> 24
-
   
-  pcr_select = [TPMS_PCR_SELECTION(TPM_ALG_ID.SHA256, select)]
+  pcr_select = get_pcr_select(pcr_list) #[TPMS_PCR_SELECTION(TPM_ALG_ID.SHA256, select)]
 
   pcr_values = []
   values = tpm.PCR_Read(pcr_select)
@@ -177,76 +199,280 @@ def get_pcr_values(pcr_list):
     # print(v.buffer)
     pcr = PcrValue(index, v.buffer)
     pcr_values.append(pcr)
-    print(index, hex_string)
+    # print(index, hex_string)
     index = index + 1
+  
+  tpm.close()
   return pcr_values
 
+
+def create_ephemeral_key(pcr_list):
+  tpm = Tpm()
+  tpm.connect()
+  pcr_select = get_pcr_select(pcr_list)
+
+  pcrs = get_pcr_values(pcr_list)
+
+  aes_256 = TPMT_SYM_DEF_OBJECT(TPM_ALG_ID.AES, 256, TPM_ALG_ID.CFB)
+  rsa_params = TPMS_RSA_PARMS(aes_256, TPMS_SIG_SCHEME_RSAPSS(), 2048, 0)
+  attributes = (
+    TPMA_OBJECT.decrypt |
+    TPMA_OBJECT.fixedTPM |
+    TPMA_OBJECT.fixedParent |
+    TPMA_OBJECT.sensitiveDataOrigin |
+    TPMA_OBJECT.noDA
+  )
+
+  in_public = TPMT_PUBLIC(
+    nameAlg=TPM_ALG_ID.SHA256,
+    objectAttributes=attributes,
+    authPolicy=None,
+    parameters=rsa_params,
+    unique=TPM2B_PUBLIC_KEY_RSA()
+  )
+  symWrapperDef = TPMT_SYM_DEF_OBJECT(TPM_ALG_ID.AES, 256, TPM_ALG_ID.CFB)
+  symWrapperTemplate = TPMT_PUBLIC(TPM_ALG_ID.SHA256,
+            attributes,
+            None,
+            TPMS_RSA_PARMS(symWrapperDef, TPMS_ENC_SCHEME_RSAES(), 2048, 0),
+            TPM2B_PUBLIC_KEY_RSA())
+
+  print('Key Size: ', in_public.parameters.scheme)
+  print('Public Type: ', in_public.type)
+  print('Parameters: ', in_public.parameters)
+  # in_public.parameters.symmetric.keyBits = 256
+  # print('Key Size After: ', in_public.parameters.symmetric.keyBits)
+  sign = TPM_HANDLE(int(AIK_PUB_INDEX, 16) + 3)
+
+  # Start a policy session to be used with ActivateCredential()
+  nonceCaller = crypto.randomBytes(20)
+  respSas = tpm.StartAuthSession(None, None, nonceCaller, None, TPM_SE.TRIAL, NullSymDef, TPM_ALG_ID.SHA256)
+  hSess = respSas.handle
+  print('DRS >> StartAuthSession(POLICY_SESS) returned ' + str(tpm.lastResponseCode) + '; sess handle: ' + str(hSess.handle))
+  sess = Session(hSess, respSas.nonceTPM)
+
+  # Retrieve the policy digest computed by the TPM
+  pcr_digest = sha256_hash_update(pcrs)
+  resp = tpm.PolicyPCR(hSess, bytes.fromhex(pcr_digest), pcr_select)
+  dupPolicyDigest = tpm.PolicyGetDigest(hSess)
+  print('DRS >> PolicyGetDigest() returned ' + str(tpm.lastResponseCode))
+  print('Digest Size: ', len(pcr_digest))
+
+  session = NullPwSession
+  
+  print(dupPolicyDigest)
+  in_public.authPolicy = dupPolicyDigest
+  symWrapperTemplate.authPolicy = dupPolicyDigest
+
+  print(base64_encode(bytes.fromhex(pcr_digest)))
+  primary = TPM_HANDLE(TPM_RH.OWNER)
+  idKey = tpm.CreatePrimary(primary, TPMS_SENSITIVE_CREATE(), in_public, None, pcr_select)
+  print('DRS >> CreatePrimary(idKey) returned ' + str(tpm.lastResponseCode))
+
+  if (not idKey.getHandle()):
+      raise(Exception("CreatePrimary failed for " + in_public))
+
+  # encryption_key = idKey.outPublic.asTpm2B() # TpmBuffer(idKey.outPublic.asTpm2B()).createObj(TPM2B_PUBLIC).asTpm2B()
+  # print(idKey.outPublic.asTpm2B())
+  # handle = tpm.CreatePrimary(primary_handle, TPMS_SENSITIVE_CREATE(), in_public, None, pcr_select)
+  # out_public = handle
+
+  
+  
+  # clear the tpm slots
+  cleanSlots(tpm, TPM_HT.TRANSIENT)
+  cleanSlots(tpm, TPM_HT.LOADED_SESSION)
+  tpm.close()
+
+  return idKey
 
 def get_ephemeral_key(pcr_list):
   tpm = Tpm()
   tpm.connect()
 
-  pcr_mask = 0
-  for i in pcr_list:
-    print(i)
-    pcr_mask |= 1 << i
+  pcr_select = get_pcr_select(pcr_list)
 
-  select = [None] * 3
-  select[0] = pcr_mask & 0xFF00 >> 8
-  select[1] = pcr_mask & 0xFF0000 >> 16
-  select[2] = pcr_mask & 0xFF000000 >> 24
-  pcr_select = [TPMS_PCR_SELECTION(TPM_ALG_ID.SHA256, select)]
+  pcrs = get_pcr_values(pcr_list)
 
   in_public = TPMT_PUBLIC(
             TPM_ALG_ID.SHA256,
-            (TPMA_OBJECT.decrypt |
+            (
+              TPMA_OBJECT.decrypt |
               TPMA_OBJECT.fixedTPM |
               TPMA_OBJECT.fixedParent |
               TPMA_OBJECT.sensitiveDataOrigin |
-              TPMA_OBJECT.noDA),
+              TPMA_OBJECT.noDA
+            ),
             None,
             TPMS_RSA_PARMS(
               TPMT_SYM_DEF_OBJECT(),
-              TPMS_NULL_SIG_SCHEME(),
+              TPMS_NULL_ASYM_SCHEME(),
               2048,
               0),
             TPM2B_PUBLIC_KEY_RSA())
-  
+
   primary_handle = TPM_HANDLE()
-  # tpm.FlushContext(primary_handle)
+  sign = TPM_HANDLE(int(AIK_PUB_INDEX, 16) + 3)
 
-  cleanSlots(tpm, TPM_HT.PERSISTENT)
-  cleanSlots(tpm, TPM_HT.TRANSIENT)
-  cleanSlots(tpm, TPM_HT.LOADED_SESSION)
+  # Start a policy session to be used with ActivateCredential()
+  nonceCaller = crypto.randomBytes(20)
+  respSas = tpm.StartAuthSession(None, None, nonceCaller, None, TPM_SE.TRIAL, NullSymDef, TPM_ALG_ID.SHA256)
+  hSess = respSas.handle
+  print('DRS >> StartAuthSession(POLICY_SESS) returned ' + str(tpm.lastResponseCode) + '; sess handle: ' + str(hSess.handle))
+  sess = Session(hSess, respSas.nonceTPM)
 
-  handle = tpm.CreatePrimary(primary_handle, TPMS_SENSITIVE_CREATE(), in_public, bytearray(0), pcr_select)
-  # response = tpm.Create(handle.getHandle(), TPMS_SENSITIVE_CREATE(), in_public, bytearray(0), pcr_select)
-  # # print(response.outPrivate)
-  # # print(response.outPublic)
-  # test = tpm.Load(primary_handle, response.outPrivate, response.outPublic)
+  # Retrieve the policy digest computed by the TPM
+  pcr_digest = sha256_hash_update(pcrs)
+  resp = tpm.PolicyPCR(hSess, bytes.fromhex(pcr_digest), pcr_select)
+  dupPolicyDigest = tpm.PolicyGetDigest(hSess)
+  print('DRS >> PolicyGetDigest() returned ' + str(tpm.lastResponseCode))
+  print('Digest Size: ', len(pcr_digest))
 
-  # print('response: ', test.creationData)
-  out_public = handle.outPublic
-  encryption_key = out_public.toBytes()
-  # print()
-  print('Enc Key: ', ''.join('{:02x}'.format(x) for x in encryption_key))
-  # print()
-  # print('Test: ', primary_handle)
+  session = NullPwSession
+  
+  print(dupPolicyDigest)
+  in_public.authPolicy = dupPolicyDigest
 
-  response = tpm.Certify(handle.getHandle(), primary_handle, bytearray(), TPMS_NULL_SIG_SCHEME())
+
+  print(base64_encode(bytes.fromhex(pcr_digest)))
+
+  idKey = tpm.withSession(NullPwSession)  \
+              .CreatePrimary(Owner, TPMS_SENSITIVE_CREATE(), in_public, None, pcr_select)
+  print('DRS >> CreatePrimary(idKey) returned ' + str(tpm.lastResponseCode))
+  # encryption_key = idKey.outPublic.toBytes()
+
+  encryption_key = idKey.outPublic.asTpm2B() # TpmBuffer(idKey.outPublic.asTpm2B()).createObj(TPM2B_PUBLIC).asTpm2B()
+  # print(idKey.outPublic.asTpm2B())
+  # handle = tpm.CreatePrimary(primary_handle, TPMS_SENSITIVE_CREATE(), in_public, None, pcr_select)
+  # out_public = handle
+ 
+  print('CreatePrimary returned ' + str(tpm.lastResponseCode))
+  if (not idKey.getHandle()):
+      raise(Exception("CreatePrimary failed for " + in_public))
+  # h = tpm.Create(handle.getHandle(), TPMS_SENSITIVE_CREATE(), test, None, None)
+  # h = tpm.Load(handle.getHandle(), h.outPrivate, h.outPublic)
+  
+  # outPub = tpm.ReadPublic(handle.getHandle())
+  # print(out_public.outPublic.unique.buffer)
+  # print("Testing: ", ek)
+  
+  # encryption_key = out_public.outPublic.toBytes()
+  # print('Enc Key: ', ''.join('{:02x}'.format(x) for x in encryption_key))
+  # print('Enc Key Length: ', len(encryption_key))
+  # Assuming 'public_key_bytes' is your RSA public key bytes
+  # public_key = serialization.load_pem_public_key(encryption_key, backend=default_backend())
+  # Load your key (public or private) from a file, bytes, or other sources
+  # with open("public.bin", "rb") as key_file:
+  #     key = serialization.load_der_public_key(
+  #         key_file.read(), 
+  #         backend=default_backend()
+  #     )
+      # key = key_file.read()
+      # print(key)
+      # print('Key Length: ', len(key))
+  # Check if the loaded key is an instance of RSAPublicKey or RSAPrivateKey
+  # if isinstance(public_key, rsa.RSAPublicKey) or isinstance(public_key, rsa.RSAPrivateKey):
+  #     print("The key is an RSA key.")
+  # else:
+  #     print("The key is not an RSA key.")
+
+  response = tpm.Certify(idKey.getHandle(), sign, 0, TPMS_NULL_ASYM_SCHEME())
+  print('Dat: ', response.certifyInfo.attested)
+  buf = TpmBuffer(response.certifyInfo.asTpm2B()).createObj(TPM2B_ATTEST)
+  print(buf.attestationData.attested)
   certify_info = response.certifyInfo.toBytes()
-  signature = response.signature.toBytes()
+  signature = response.signature.sig
 
   ephemeral_Key = EphemeralKey(encryption_key, certify_info, signature)
 
+  print(idKey.outPublic.unique.buffer)
+  # key_out_public = TpmBuffer(idKey.toBytes()).createObj(CreatePrimaryResponse)
+  print(key_out_public)
   # clear the tpm slots
-  cleanSlots(tpm, TPM_HT.PERSISTENT)
-  cleanSlots(tpm, TPM_HT.TRANSIENT)
+  # cleanSlots(tpm, TPM_HT.TRANSIENT)
   cleanSlots(tpm, TPM_HT.LOADED_SESSION)
 
   tpm.close()
 
   return ephemeral_Key
+
+
+def decrypt_with_ephemeral_key(encrypted_data, pcr_list):
+  tpm = Tpm()
+  tpm.connect()
+
+  pcr_select = get_pcr_select(pcr_list)
+
+  pcrs = get_pcr_values(pcr_list)
+
+  # create new ephemeral key in the TPM to decrypt 
+  # idKey = create_ephemeral_key(pcr_list)
+  # print(key_out_public.)
+  persistent = TPM_HANDLE(0x80000000)
+  # Start a policy session to be used with ActivateCredential()
+  nonceCaller = crypto.randomBytes(20)
+  respSas = tpm.StartAuthSession(None, None, nonceCaller, None, TPM_SE.POLICY, NullSymDef, TPM_ALG_ID.SHA256)
+  hSess = respSas.handle
+  print('DRS >> StartAuthSession(POLICY_SESS) returned ' + str(tpm.lastResponseCode) + '; sess handle: ' + str(hSess.handle))
+  sess = Session(hSess, respSas.nonceTPM)
+
+  # Retrieve the policy digest computed by the TPM
+  pcr_digest = sha256_hash_update(pcrs)
+  tpm.PolicyPCR(hSess, bytes.fromhex(pcr_digest), pcr_select)
+  print('DRS >> PolicyGetDigest() returned ' + str(tpm.lastResponseCode))
+  print('Digest Size: ', len(pcr_digest))
+
+  in_scheme =  TPMT_RSA_SCHEME(TPMS_SCHEME_RSAES()).details
+  # print('Size of Enc Data: ', key_out_public.outPublic.parameters.scheme)
+  # print('Size of Enc Data: ', in_scheme.scheme)
+
+  with open('secret.bin.enc', 'wb') as file:
+    file.write(encrypted_data)
+
+  # print(key_out_public.outPublic.parameters.symmetric.keyBits)
+
+  data_plain = "Hello World\n"
+  
+
+  att = (
+              TPMA_OBJECT.decrypt |
+              TPMA_OBJECT.fixedTPM |
+              TPMA_OBJECT.fixedParent |
+              TPMA_OBJECT.sensitiveDataOrigin |
+              TPMA_OBJECT.noDA
+            )
+  response = tpm.allowErrors().ReadPublic(persistent)
+  print(response.outPublic.objectAttributes == att)
+  #tpm.allowErrors().EvictControl(TPM_HANDLE.OWNER, hPers, hPers)
+  if (tpm.lastResponseCode == TPM_RC.SUCCESS):
+      print("Persistent key " + hex(persistent.handle) + " already exists")
+      print("Handle Type " + str(persistent.getType().value))
+  else:
+    print("No Exist")
+    pass
+  #   h = idKey.handle
+  #   tpm.EvictControl(TPM_HANDLE.OWNER, h, persistent)
+  #   tpm.FlushContext(h)
+  # encryption_key = idKey.outPublic.toBytes()
+
+  try:
+    encrypted = tpm.withSession(sess).RSA_Encrypt(persistent, bytes(data_plain, 'utf-8'), TPMS_NULL_ASYM_SCHEME(), None)
+    print('Encrypted Data Bytes: ', encrypted)
+    decrypted_data \
+      = tpm.withSession(sess).RSA_Decrypt(persistent, encrypted_data, TPMS_NULL_ASYM_SCHEME(), None)
+    print('Decrypted Inner Decryption Key...')
+    # print(resp)
+
+    return decrypted_data
+  except Exception as e:
+    print("Exception: ", e)
+    # clear the tpm slots
+    cleanSlots(tpm, TPM_HT.TRANSIENT)
+    cleanSlots(tpm, TPM_HT.LOADED_SESSION)
+
+    tpm.close()
+
+  return ""
 
 def cleanSlots(tpm, slotType):
     caps = tpm.GetCapability(TPM_CAP.HANDLES, slotType << 24, 8)
