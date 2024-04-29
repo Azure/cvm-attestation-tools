@@ -1,4 +1,4 @@
-# isolation.py
+# Isolation.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
@@ -30,7 +30,7 @@ class IsolationInfo:
     # Add your validation logic here
     pass
 
-  def to_json(self):
+  def get_values(self):
     type = ""
     isolation = {}
     if self.isolation_type == IsolationType.SEV_SNP:
@@ -52,4 +52,4 @@ class IsolationInfo:
         }
       }
 
-      return json.dumps(isolation)
+      return isolation
