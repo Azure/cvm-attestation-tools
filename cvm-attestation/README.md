@@ -34,6 +34,28 @@ sudo attest  --c config_tdx_ita.json
 ```
 **IMPORTANT:** Don't forget to add the `api_key` to the config file.
 
+### `--c` Config File Option
+Option to set config file
+```
+attest  --c config_sample.json
+```
+
+### `--t` Attestation Type Option
+Option to provide type of attestation to be run
+
+#### Platform
+Attest the Hardware using the Machines Hardware Report
+```
+attest  --c config_sample.json --t Platform
+```
+
+#### Guest
+Attest the Hardware and the Guest measurements
+```
+attest  --c config_sample.json --t Guest
+```
+
+
 The console output will contain the `Token` returned by the Attestation Provider as well as some of the claims parsed from the token.
 
 ## TDX 

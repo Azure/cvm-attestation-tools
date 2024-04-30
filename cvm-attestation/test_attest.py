@@ -5,37 +5,27 @@
 
 import pytest
 from click.testing import CliRunner
-from attest import main
+from attest import attest
 
-
-def read_hcl_report():
-    file = open("tests/report.bin","rb")
-    hcl_report = file.read()
-    file.close()
-    return hcl_report
-
-
-@pytest.fixture
-def mock_get_hcl_report(mocker):
-    mock_report = read_hcl_report()
-    return mocker.patch('tpm_wrapper.get_hcl_report', return_value=mock_report)
-
-@pytest.fixture
-def mock_get_td_quote(mocker):
-    evidence = '{\"quote\":\"some quote\"'
-    return mocker.patch('src.imds.get_td_quote', return_value=evidence)
-
-@pytest.fixture
-def mock_verify_evidence(mocker):
-    token = '{\"token\":\"some token\"}'
-    return mocker.patch('src.verifier.verify_evidence', return_value=token)
-
-
-def test_attest_successfully(
-    mocker,
-    mock_get_hcl_report,
-    mock_get_td_quote):
-
+def test_attest_successfully():
     runner = CliRunner()
-    runner.invoke(main, ['--c', 'somefile.json'])
+    runner.invoke(attest, ['--c', 'somefile.json'])
     assert True
+
+def test_attest_successfully_with_type_option():
+    runner = CliRunner()
+    runner.invoke(attest, ['--c', 'somefile.json', '--t', 'Platform'])
+    assert True
+
+def test_attest_successfully_with_guest_type_option():
+    runner = CliRunner()
+    runner.invoke(attest, ['--c', 'somefile.json', '--t', 'Guest'])
+    assert True
+
+def test_attest_fails_with_incorrect_type_option():
+    runner = CliRunner()
+    result = runner.invoke(attest, ['--c', 'somefile.json', '--t', 'Invalid'])
+    assert result.exit_code != 0
+    assert 'Invalid value for' in result.output
+
+

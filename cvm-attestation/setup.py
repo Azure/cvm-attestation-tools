@@ -9,13 +9,13 @@ setup(
     name='attest',
     version='0.1',
     packages=find_packages(),
-    py_modules=['attest', 'tpm_wrapper'],  # Include the attest module
+    py_modules=['attest', 'tpm_wrapper', 'AttestationClient', 'AttestationTypes'],  # Include the attest module
     install_requires=[
         'Click',
     ],
     entry_points={
         'console_scripts': [
-            'attest = attest:main',
+            'attest = attest:attest',
         ],
     }
 )
