@@ -6,6 +6,9 @@
 import requests
 import json
 import logging
+from abc import ABC, abstractmethod
+from src.Isolation import *
+from src.Logger import *
 
 DEFAULT_HEADERS = {'Content-Type': 'application/json', 'Accept': 'application/json'}
 DEFAULT_VERIFIERS = {
@@ -93,6 +96,32 @@ def verify_evidence(config):
     logging.error('Failed to verify evidence, error: ', response.text)
 
 
+def verify_guest_evidence(config):
+  evidence = config['evidence']
+  endpoint = config['endpoint']
+  print(endpoint)
+
+  headers = DEFAULT_HEADERS
+
+  print("Sending request to Attestation Provider")
+  response = requests.post(
+    endpoint,
+    data = json.dumps(evidence),
+    headers = headers)
+
+  if response.status_code == 200:
+    response_json = json.loads(response.text)
+
+    print("Got response from Attestation Provider")
+    print()
+    print("TOKEN: \n")
+    print(response_json['token'])
+    encoded_token = response_json['token']
+    return encoded_token
+  else:
+    logging.error('Failed to verify evidence, error: ', response.text)
+
+
 def print_vm_configuration(claims):
   print("CVM Configuration:")
   print("\tConsole Enabled: ", claims['x-ms-runtime']['vm-configuration']['console-enabled'])
@@ -157,3 +186,34 @@ def print_token_claims(claims, verfier='maa'):
     print_snp_claims(claims)
   else:
     logging.error('Invalid verifier')
+
+
+class AttestationProvider:
+    def __init__(self, verifier, isolation, endpoint, api_key=None):
+        self.verifier = verifier
+        self.isolation = isolation
+        self.endpoint = endpoint
+        self.api_key = api_key
+
+    def get_provider(self):
+        provider_lookup = {
+            'maa_tdx': 'MAA',
+            'maa_snp': 'MAA',
+            'ita': 'ITA',
+            'default': 'UNDEFINED'
+        }
+        return provider_lookup.get(self.verifier, provider_lookup['default'])
+
+    def get_isolation(self):
+        isolation_lookup = {
+            'maa_tdx': 'TDX',
+            'maa_snp': 'SEV_SNP',
+            'ita': 'TDX',
+            'default': 'UNDEFINED'
+        }
+        return isolation_lookup.get(self.verifier, isolation_lookup['default'])
+
+# Usage example:
+attestation = AttestationProvider(verifier='maa_tdx', isolation='TDX', endpoint='https://api.example.com', api_key='12345')
+provider = attestation.get_provider()
+isolation = attestation.get_isolation()

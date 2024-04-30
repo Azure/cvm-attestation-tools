@@ -104,11 +104,12 @@ class AttestationClient():
 
     # Collect guest attestation parameters
     os_info = OsInfo()
+    print(os_info.pcr_list)
     aik_cert = get_aik_cert()
     aik_pub = get_aik_pub()
     pcr_quote, sig = get_pcr_quote(os_info.pcr_list)
     pcr_values = get_pcr_values(os_info.pcr_list)
-    key = get_ephemeral_key(os_info.pcr_list)
+    key, handle, tpm = get_ephemeral_key(os_info.pcr_list)
     tpm_info = TpmInfo(aik_cert, aik_pub, pcr_quote, sig, pcr_values, key)
     tcg_logs = get_measurements(os_info.type)
     isolation = IsolationInfo(self.parameters.isolation_type, hw_report, runtime_data, cert_chain)
@@ -119,12 +120,13 @@ class AttestationClient():
       "AttestationInfo": Encoder.base64url_encode_string(param.toJson())
     }
     encoded_response = self.provider.attest_guest(request)
-
+    print(encoded_response)
     self.log.info('Parsing encoded token...')
 
     # decode the response
-    response = urlsafe_b64decode(encoded_response).decode('utf-8')
+    response = urlsafe_b64decode(encoded_response + '==').decode('utf-8')
     response = json.loads(response)
+    print(response)
 
     # parse encrypted inner key
     encrypted_inner_key = response['EncryptedInnerKey']
@@ -135,13 +137,14 @@ class AttestationClient():
     encryption_params_json = response['EncryptionParams']
     iv = json.dumps(encryption_params_json['Iv'])
     iv = Encoder.base64decode(iv)
+    print(iv)
 
     auth_data = response['AuthenticationData']
     auth_data = json.dumps(auth_data)
     auth_data = Encoder.base64decode(auth_data)
 
     decrypted_inner_key = \
-      decrypt_with_ephemeral_key(encrypted_inner_key_decoded, os_info.pcr_list)
+      decrypt_with_ephemeral_key(encrypted_inner_key_decoded, os_info.pcr_list, handle, tpm)
     print("HERE")
 
     # parse the encrypted token

@@ -34,12 +34,11 @@ def get_measurements(os):
         while True:
             name, value, type = winreg.EnumValue(key, count)
             if name == VALUE:
-                print(name, value)
                 tcg_logs = value
             count += 1
     except WindowsError:
         pass
 
-    # Don't forget to close the key when done
     winreg.CloseKey(key)
+
     return tcg_logs

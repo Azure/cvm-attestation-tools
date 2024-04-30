@@ -34,7 +34,6 @@ class OsInfo:
       self.pcr_list = LINUX_PCR_LIST
       self.parse_linux_os_info(self.get_linux_os_info())
     elif self.type == 'Windows':
-      self.distro_name = "Microsoft"
       self.build = WINDOWS_OS_BUILD
       self.pcr_list = WINDOWS_PCR_LIST
       self.major_version = 10
