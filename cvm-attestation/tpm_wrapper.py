@@ -164,7 +164,7 @@ class TssWrapper:
     return quote_buf, sig_bytes
 
 
-  def get_pcr_select(pcr_list):
+  def get_pcr_select(self, pcr_list):
     pcr_mask = 0
     for i in pcr_list:
       pcr_mask |= (1 << i)
