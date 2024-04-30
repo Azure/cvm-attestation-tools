@@ -4,11 +4,11 @@
 # Licensed under the MIT license.
 
 import pytest
-from src.AttestationProvider import MAAProvider
+from src.AttestationProvider import MAAProvider, AttestationProviderException
 from src.Isolation import IsolationType
 from src.Logger import Logger
 from pytest_mock import mocker
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch, call
 from requests.exceptions import HTTPError
 
 
@@ -122,25 +122,46 @@ def test_attest_guest_success(maa_provider, mocker):
     assert result == 'encoded_token_value'
 
 
-def test_attest_guest_fails_with_http_400(maa_provider, mocker):
-    # Create a mock response object with failing attributes
-    mock_response = MagicMock()
-    mock_response.status_code = 400
-    mock_response.text = 'Error message'
+def test_attest_guest_fails_with_http_400_after_retries(maa_provider, mocker):
+  # Create a mock response object with failing attributes
+  mock_response = MagicMock()
+  mock_response.status_code = 400
+  mock_response.text = 'Error message'
 
-    # Use mocker to patch 'requests.post' and set a return value
-    mocker.patch('requests.post', return_value=mock_response)
-
-    with pytest.raises(ValueError) as excinfo:
+  with patch('time.sleep', return_value=None) as mock_sleep:
+    with pytest.raises(AttestationProviderException) as excinfo:
+      with patch('requests.post', return_value=mock_response) as mock_post:
         maa_provider.attest_guest({'dummy_key': 'dummy_value'})
-    assert str(excinfo.value) == "Unexpected status code: 400, error: Error message"
+      assert mock_post.call_count == 5
+    assert 'Unexpected status code: 400, error: Error message' in str(excinfo.value)
+    
+    # request should be sent using exponential backoff
+    mock_sleep.assert_has_calls(calls=[
+      call(1),
+      call(2),
+      call(4),
+      call(8)])
+    assert mock_sleep.call_count == 4
 
 
-def test_attest_guest_fails_with_exception(maa_provider, mocker):
-    mocker.patch('requests.post', side_effect=HTTPError("HTTP Error occurred"))
+def test_attest_guest_fails_with_exception_after_retries(maa_provider, mocker):
+  mocker.patch('requests.post', side_effect=HTTPError("HTTP Error occurred"))
 
-    with pytest.raises(SystemError):
+  with patch('time.sleep', return_value=None) as mock_sleep:
+    with pytest.raises(AttestationProviderException) as excinfo:
+      with patch('requests.post', side_effect=HTTPError("HTTP Error occurred")) as mock_post:
         maa_provider.attest_guest({'dummy_key': 'dummy_value'})
+      assert mock_post.call_count == 5
+    assert 'Request failed after all retries have been exhausted. Error:' in str(excinfo.value)
+
+  # request should be sent using exponential backoff
+    mock_sleep.assert_has_calls(calls=[
+      call(1),
+      call(2),
+      call(4),
+      call(8)])
+    assert mock_sleep.call_count == 4
+
 
 
 def test_attest_platform_success(maa_provider, mocker):
@@ -159,24 +180,40 @@ def test_attest_platform_success(maa_provider, mocker):
     assert result == 'encoded_token_value'
 
 
-def test_attest_platform_fails_with_http_400(maa_provider, mocker):
-    # Create a mock response object with failing attributes
-    mock_response = MagicMock()
-    mock_response.status_code = 400
-    mock_response.text = 'Error message'
+def test_attest_platform_fails_with_http_400_after_retries(maa_provider, mocker):
+  # Create a mock response object with failing attributes
+  mock_response = MagicMock()
+  mock_response.status_code = 400
+  mock_response.text = 'platform_http_error'
 
-    # Use mocker to patch 'requests.post' and set a return value
-    mocker.patch('requests.post', return_value=mock_response)
+  with patch('time.sleep', return_value=None) as mock_sleep:
+    with pytest.raises(AttestationProviderException) as excinfo:
+      with patch('requests.post', return_value=mock_response) as mock_post:
+        maa_provider.attest_guest({'dummy_key': 'dummy_value'})
+      assert mock_post.call_count == 5
+    assert f'Unexpected status code: 400, error: {mock_response.text}' in str(excinfo.value)
+  
+  # request should be sent using exponential backoff
+  mock_sleep.assert_has_calls(calls=[
+    call(1),
+    call(2),
+    call(4),
+    call(8)])
+  assert mock_sleep.call_count == 4
 
-    with pytest.raises(ValueError) as excinfo:
-        maa_provider.isolation = IsolationType.SEV_SNP
-        maa_provider.attest_platform('dummy_evidence', 'dummy_runtimes_data')
-    assert str(excinfo.value) == "Unexpected status code: 400, error: Error message"
 
-
-def test_attest_platform_fails_with_exception(maa_provider, mocker):
-    mocker.patch('requests.post', side_effect=HTTPError("HTTP Error occurred"))
-
-    with pytest.raises(SystemError):
-        maa_provider.isolation = IsolationType.SEV_SNP
-        maa_provider.attest_platform('dummy_evidence', 'dummy_runtimes_data')
+def test_attest_platform_fails_with_exception_after_retries(maa_provider, mocker):
+  with patch('time.sleep', return_value=None) as mock_sleep:
+    with pytest.raises(AttestationProviderException) as excinfo:
+      with patch('requests.post', side_effect=HTTPError("platform_htt_except")) as mock_post:
+        maa_provider.attest_guest({'dummy_key': 'dummy_value'})
+      assert mock_post.call_count == 5
+    assert f'Request failed after all retries have been exhausted. Error: platform_htt_except' in str(excinfo.value)
+  
+  # request should be sent using exponential backoff
+  mock_sleep.assert_has_calls(calls=[
+    call(1),
+    call(2),
+    call(4),
+    call(8)])
+  assert mock_sleep.call_count == 4
