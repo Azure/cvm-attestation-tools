@@ -92,7 +92,7 @@ class AttestationClient():
     """
     Attest the Guest
     """
-    tss_wrapper = TssWrapper()
+    tss_wrapper = TssWrapper(self.log)
     imds_client = ImdsClient(self.log)
     # Extract Hardware Report and Runtime Data
     hcl_report = tss_wrapper.get_hcl_report(self.parameters.user_claims)
