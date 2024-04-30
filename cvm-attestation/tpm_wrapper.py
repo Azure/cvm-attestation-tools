@@ -326,7 +326,7 @@ class TssWrapper:
       handles = caps.capabilityData
 
       if len(handles.handle) == 0:
-        self.log.info("No dangling", slotType, "handles")
+        self.log.info("No dangling {slotType} handles")
       else:
         for h in handles.handle:
           self.log.info(f"Dangling {slotType} handle {hex(h.handle)}")
