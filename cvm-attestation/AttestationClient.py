@@ -171,6 +171,9 @@ class AttestationClient():
     self.log.info('TOKEN:')
     self.log.info(decrypted_data.decode('utf-8'))
 
+    encoded_token = decrypted_data.decode('utf-8')
+    self.provider.print_guest_claims(encoded_token)
+
     return decrypted_data
 
 
@@ -211,4 +214,8 @@ class AttestationClient():
 
     # verify hardware evidence
     encoded_token = self.provider.attest_platform(encoded_hw_evidence, encoded_runtime_data)
+    self.log.info('TOKEN:')
+    self.log.info(encoded_token)
+    self.provider.print_platform_claims(encoded_token)
+
     return encoded_token

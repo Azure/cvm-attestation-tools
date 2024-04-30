@@ -69,8 +69,6 @@ def attest(c, t):
   elif attestation_type.lower() == str('Platform').lower():
     if 'attest/SevSnpVm' in endpoint:
       token = attestation_client.attest_platform()
-      logger.info('TOKEN:')
-      logger.info(token)
     else:
       raise AttestException('Invalid endpoint. Make sure endpoint is correct for attesting the Platform')
   else:

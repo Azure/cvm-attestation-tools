@@ -5,6 +5,7 @@
 
 import requests
 import json
+import jwt
 import time
 from abc import ABC, abstractmethod
 from src.Isolation import IsolationType
@@ -180,6 +181,37 @@ class MAAProvider(IAttestationProvider):
           raise AttestationProviderException(
             f"Request failed after all retries have been exhausted. Error: {e}"
           )
+
+
+  def print_platform_claims(self, encoded_token):
+    try:
+      claims = jwt.decode(encoded_token, options={"verify_signature": False})
+
+      if claims['x-ms-compliance-status'] == 'azure-compliant-cvm':
+        self.log.info(f"Claims:")
+        self.log.info(f"Attestation Type: {claims['x-ms-attestation-type']}")
+        self.log.info(f"Status: {claims['x-ms-compliance-status']}")
+        self.log.info(f"Bootloader SVN: {claims['x-ms-sevsnpvm-bootloader-svn']}")
+        self.log.info(f"Guest SVN: {claims['x-ms-sevsnpvm-guestsvn']}")
+        self.log.info(f"Microcode SVN: {claims['x-ms-sevsnpvm-microcode-svn']}")
+        self.log.info("Attested Platform Successfully!!")
+    except Exception as e:
+      raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
+
+  def print_guest_claims(self, encoded_token):
+    try:
+      claims = jwt.decode(encoded_token, options={"verify_signature": False})
+
+      if claims['x-ms-isolation-tee']['x-ms-compliance-status'] == 'azure-compliant-cvm':
+        self.log.info(f"Claims:")
+        self.log.info(f"Attestation Type: {claims['x-ms-isolation-tee']['x-ms-attestation-type']}")
+        self.log.info(f"Status: {claims['x-ms-isolation-tee']['x-ms-compliance-status']}")
+        self.log.info(f"Bootloader SVN: {claims['x-ms-isolation-tee']['x-ms-sevsnpvm-bootloader-svn']}")
+        self.log.info(f"Guest SVN: {claims['x-ms-isolation-tee']['x-ms-sevsnpvm-guestsvn']}")
+        self.log.info(f"Microcode SVN: {claims['x-ms-isolation-tee']['x-ms-sevsnpvm-microcode-svn']}")
+        self.log.info("Attested Guest Successfully!!")
+    except Exception as e:
+      raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
 
 
   def create_payload(self, evidence: str, runtimes_data: str):
