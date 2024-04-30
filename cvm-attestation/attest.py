@@ -6,6 +6,7 @@ import click
 from AttestationClient import AttestationClient, AttestationClientParameters, Verifier
 from src.Isolation import IsolationType
 from src.Logger import Logger
+from urllib.parse import urlparse
 
 
 def parse_config_file(filename):
@@ -60,6 +61,10 @@ def attest(c, t):
   # Attest based on user configuration
   attestation_client = AttestationClient(logger, client_parameters)
 
+  parsed_endpoint = urlparse(endpoint)
+  if not parsed_endpoint.scheme or not parsed_endpoint.netloc:
+    raise ValueError(f"Invalid endpoint: {endpoint}. Endpoint must be a valid URL.")
+
   if attestation_type.lower() == str('Guest').lower():
     # if attesting the guest we need to make sure the right endpoint is used
     if 'attest/AzureGuest' in endpoint:
@@ -67,10 +72,7 @@ def attest(c, t):
     else:
       raise AttestException('Invalid endpoint. Make sure endpoint is correct for attesting the Guest')
   elif attestation_type.lower() == str('Platform').lower():
-    if 'attest/SevSnpVm' in endpoint:
-      token = attestation_client.attest_platform()
-    else:
-      raise AttestException('Invalid endpoint. Make sure endpoint is correct for attesting the Platform')
+    token = attestation_client.attest_platform()
   else:
     raise AttestException('Invalid parameter for attestation type')
 
