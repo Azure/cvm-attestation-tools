@@ -102,6 +102,9 @@ class TssWrapper:
     tpm = Tpm()
     tpm.connect()
 
+    self.cleanSlots(tpm, TPM_HT.TRANSIENT)
+    self.cleanSlots(tpm, TPM_HT.LOADED_SESSION)
+    
     handle = TPM_HANDLE(index)
     outPub = tpm.allowErrors().ReadPublic(handle)
     h = outPub
@@ -147,17 +150,14 @@ class TssWrapper:
     tpm = Tpm()
     tpm.connect()
 
+    self.log.info('Getting PCR Select')
     pcr_select = self.get_pcr_select(pcr_list)
     sign_handle = TPM_HANDLE(int(AIK_PUB_INDEX, 16) + 3)
 
-    self.get_pcr_values(pcr_list)
+    self.log.info('Quoting PCR Values')
     pcr_quote = tpm.Quote(sign_handle, None, TPMS_NULL_SIG_SCHEME(), pcr_select)
-
     quote_buf = pcr_quote.quoted.toBytes()
-    self.log.info('Quoted: ', ''.join('{:02x}'.format(x) for x in quote_buf))
-
     sig_bytes = pcr_quote.signature.sig
-    self.log.info('Sig: ', ''.join('{:02x}'.format(x) for x in sig_bytes))
 
     tpm.close()
 
@@ -181,25 +181,21 @@ class TssWrapper:
   def get_pcr_values(self, pcr_list):
     tpm = Tpm()
     tpm.connect()
-
-    self.log.info('Reading PCR Values')
     
-    pcr_select = self.get_pcr_select(pcr_list)
+    self.log.info('Reading PCR Values from the TPM...')
 
+    pcr_select = self.get_pcr_select(pcr_list)
     pcr_values = []
     pcr_values_count = 0
     maskSum = 1
     while maskSum != 0:
-      ret = tpm.PCR_Read(self, pcr_select)
-      self.log.info("here")
-      pcrUpdateCounter = ret.pcrUpdateCounter
+      ret = tpm.PCR_Read(pcr_select)
       pcrVals = ret.pcrValues
       pcrSel = ret.pcrSelectionOut
 
       if pcrVals and pcrSel:
         index = 0
         for value in pcrVals:
-          hex_string = ''.join('{:02x}'.format(x) for x in value.buffer)
           pcr = PcrValue(pcr_values_count, value.buffer)
           pcr_values.insert(pcr_values_count, pcr)
           index = index + 1
@@ -213,7 +209,10 @@ class TssWrapper:
           pcr_select[0].pcrSelect[i] &= (~pcrSel[0].pcrSelect[i])
           maskSum = maskSum + pcr_select[0].pcrSelect[i]
           i = i + 1
+
+    self.log.info('Done reading PCR values')
     tpm.close()
+
     return pcr_values
 
   def get_ephemeral_key(self, pcr_list):
@@ -272,7 +271,6 @@ class TssWrapper:
   
 
     response = tpm.Certify(idKey.getHandle(), sign, 0, TPMS_NULL_ASYM_SCHEME())
-    self.log.info('Dat: ', response.certifyInfo.attested)
     buf = TpmBuffer(response.certifyInfo.asTpm2B()).createObj(TPM2B_ATTEST)
     self.log.info(buf.attestationData.attested)
     certify_info = response.certifyInfo.toBytes()
@@ -331,7 +329,7 @@ class TssWrapper:
         self.log.info("No dangling", slotType, "handles")
       else:
         for h in handles.handle:
-          self.log.info("Dangling", slotType, "handle 0x" + hex(h.handle))
+          self.log.info(f"Dangling {slotType} handle {hex(h.handle)}")
           if slotType == TPM_HT.PERSISTENT:
             tpm.allowErrors().EvictControl(TPM_HANDLE.OWNER, h, h)
             if tpm.lastResponseCode not in [TPM_RC.SUCCESS, TPM_RC.HIERARCHY]:

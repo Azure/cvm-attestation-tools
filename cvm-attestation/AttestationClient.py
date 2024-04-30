@@ -119,13 +119,11 @@ class AttestationClient():
       "AttestationInfo": Encoder.base64url_encode_string(param.toJson())
     }
     encoded_response = self.provider.attest_guest(request)
-    print(encoded_response)
     self.log.info('Parsing encoded token...')
 
     # decode the response
     response = urlsafe_b64decode(encoded_response + '==').decode('utf-8')
     response = json.loads(response)
-    print(response)
 
     # parse encrypted inner key
     encrypted_inner_key = response['EncryptedInnerKey']
@@ -136,7 +134,6 @@ class AttestationClient():
     encryption_params_json = response['EncryptionParams']
     iv = json.dumps(encryption_params_json['Iv'])
     iv = Encoder.base64decode(iv)
-    print(iv)
 
     auth_data = response['AuthenticationData']
     auth_data = json.dumps(auth_data)
@@ -182,10 +179,11 @@ class AttestationClient():
     """
     self.log.info('Attesting Platform Evidence...')
 
+    tss_wrapper = TssWrapper(self.log)
     isolation_type = self.parameters.isolation_type 
 
     # Extract Hardware Report and Runtime Data
-    hcl_report = get_hcl_report(self.parameters.user_claims)
+    hcl_report = tss_wrapper.get_hcl_report(self.parameters.user_claims)
     report_type = ReportParser.extract_report_type(hcl_report)
     runtime_data = ReportParser.extract_runtimes_data(hcl_report)
     hw_report = ReportParser.extract_hw_report(hcl_report)
