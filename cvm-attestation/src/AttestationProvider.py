@@ -183,7 +183,7 @@ class MAAProvider(IAttestationProvider):
           )
 
 
-  def print_platform_claims(self, encoded_token):
+  def print_snp_platform_claims(self, encoded_token):
     try:
       claims = jwt.decode(encoded_token, options={"verify_signature": False})
 
@@ -197,6 +197,33 @@ class MAAProvider(IAttestationProvider):
         self.log.info("Attested Platform Successfully!!")
     except Exception as e:
       raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
+
+
+  def print_platform_claims(self, encoded_token):
+    if self.isolation == IsolationType.TDX:
+      self.print_tdx_platform_claims(encoded_token)
+    elif self.isolation == IsolationType.SEV_SNP:
+      self.print_snp_platform_claims(encoded_token)
+    else:
+      raise ValueError(
+        f"Invalid Isolation Type. Valid Types: {IsolationType.TDX}, {IsolationType.SEV_SNP}"
+      )
+
+
+  def print_tdx_platform_claims(self, encoded_token):
+    try:
+      claims = jwt.decode(encoded_token, options={"verify_signature": False})
+
+      if claims['x-ms-compliance-status'] == 'azure-compliant-cvm':
+        self.log.info(f"Claims:")
+        self.log.info(f"Attestation Type: {claims['x-ms-attestation-type']}")
+        self.log.info(f"TCB Status: {claims['attester_tcb_status']}")
+        self.log.info(f"TCB SVN : {claims['tdx_tee_tcb_svn']}")
+        self.log.info(f"TPM Persisted: {claims['x-ms-runtime']['vm-configuration']['tpm-persisted']}")
+        self.log.info("Attested Platform Successfully!!")
+    except Exception as e:
+      raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
+
 
   def print_guest_claims(self, encoded_token):
     try:
@@ -266,6 +293,20 @@ class ITAProvider(IAttestationProvider):
     Verfies the Guest and Hardware Evidence provided by the Attester
     """
     pass
+
+
+  def print_platform_claims(self, encoded_token):
+    try:
+      claims = jwt.decode(encoded_token, options={"verify_signature": False})
+
+      if claims['attester_tcb_status'] == 'UpToDate':
+        self.log.info(f"Claims:")
+        self.log.info(f"Attestation Type: {claims['attester_type']}")
+        self.log.info(f"TCB Status: {claims['attester_tcb_status']}")
+        self.log.info(f"TDX Debuggable : {claims['tdx_is_debuggable']}")
+        self.log.info("Attested Platform Successfully!!")
+    except Exception as e:
+      raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
 
 
   def create_payload(self, evidence: str, runtimes_data: str):
