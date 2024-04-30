@@ -14,9 +14,7 @@ from src.AttestationProvider import MAAProvider, ITAProvider
 from AttestationTypes import TpmInfo
 from src.measurements import get_measurements
 from src.Encoder import Encoder, urlsafe_b64decode
-from tpm_wrapper import get_hcl_report, get_aik_cert, \
-  get_aik_pub, get_pcr_quote, get_pcr_values, get_ephemeral_key, \
-  decrypt_with_ephemeral_key
+from tpm_wrapper import TssWrapper
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
@@ -94,9 +92,10 @@ class AttestationClient():
     """
     Attest the Guest
     """
+    tss_wrapper = TssWrapper()
     imds_client = ImdsClient(self.log)
     # Extract Hardware Report and Runtime Data
-    hcl_report = get_hcl_report(self.parameters.user_claims)
+    hcl_report = tss_wrapper.get_hcl_report(self.parameters.user_claims)
     report_type = ReportParser.extract_report_type(hcl_report)
     runtime_data = ReportParser.extract_runtimes_data(hcl_report)
     hw_report = ReportParser.extract_hw_report(hcl_report)
@@ -105,11 +104,11 @@ class AttestationClient():
     # Collect guest attestation parameters
     os_info = OsInfo()
     print(os_info.pcr_list)
-    aik_cert = get_aik_cert()
-    aik_pub = get_aik_pub()
-    pcr_quote, sig = get_pcr_quote(os_info.pcr_list)
-    pcr_values = get_pcr_values(os_info.pcr_list)
-    key, handle, tpm = get_ephemeral_key(os_info.pcr_list)
+    aik_cert = tss_wrapper.get_aik_cert()
+    aik_pub = tss_wrapper.get_aik_pub()
+    pcr_quote, sig = tss_wrapper.get_pcr_quote(os_info.pcr_list)
+    pcr_values = tss_wrapper.get_pcr_values(os_info.pcr_list)
+    key, key_handle, tpm = tss_wrapper.get_ephemeral_key(os_info.pcr_list)
     tpm_info = TpmInfo(aik_cert, aik_pub, pcr_quote, sig, pcr_values, key)
     tcg_logs = get_measurements(os_info.type)
     isolation = IsolationInfo(self.parameters.isolation_type, hw_report, runtime_data, cert_chain)
@@ -144,8 +143,12 @@ class AttestationClient():
     auth_data = Encoder.base64decode(auth_data)
 
     decrypted_inner_key = \
-      decrypt_with_ephemeral_key(encrypted_inner_key_decoded, os_info.pcr_list, handle, tpm)
-    print("HERE")
+      tss_wrapper.decrypt_with_ephemeral_key(
+        encrypted_inner_key_decoded,
+        os_info.pcr_list,
+        key_handle,
+        tpm
+      )
 
     # parse the encrypted token
     encrypted_jwt = response['Jwt']
