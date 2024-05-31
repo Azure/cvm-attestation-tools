@@ -101,8 +101,8 @@ class ImdsClient:
         )
 
         if response.status_code == 200:
-          self.log.info("Received certificate successfully")
           data_json = json.loads(response.text)
+          self.log.info(f"Received certificate successfully, TCB version: {data_json['tcbm']}")
           cert = data_json['vcekCert']
           chain = data_json['certificateChain']
           cert_chain = cert + chain
