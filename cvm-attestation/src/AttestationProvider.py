@@ -93,6 +93,12 @@ class MAAProvider(IAttestationProvider):
           encoded_token = response_json['token']
 
           return encoded_token
+        elif response.status_code == 400:
+          self.log.error(
+            f"Failed to verify evidence due to invalid collateral, error: {response.text}"
+          )
+
+          return None
         else:
           self.log.error(
             f"Failed to verify evidence, status code: {response.status_code}, error: {response.text}"
