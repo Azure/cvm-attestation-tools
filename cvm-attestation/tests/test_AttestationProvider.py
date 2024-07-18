@@ -122,10 +122,10 @@ def test_attest_guest_success(maa_provider, mocker):
     assert result == 'encoded_token_value'
 
 
-def test_attest_guest_fails_with_http_400_after_retries(maa_provider, mocker):
+def test_attest_guest_fails_with_http_401_after_retries(maa_provider, mocker):
   # Create a mock response object with failing attributes
   mock_response = MagicMock()
-  mock_response.status_code = 400
+  mock_response.status_code = 401
   mock_response.text = 'Error message'
 
   with patch('time.sleep', return_value=None) as mock_sleep:
@@ -133,7 +133,7 @@ def test_attest_guest_fails_with_http_400_after_retries(maa_provider, mocker):
       with patch('requests.post', return_value=mock_response) as mock_post:
         maa_provider.attest_guest({'dummy_key': 'dummy_value'})
       assert mock_post.call_count == 5
-    assert 'Unexpected status code: 400, error: Error message' in str(excinfo.value)
+    assert 'Unexpected status code: 401, error: Error message' in str(excinfo.value)
     
     # request should be sent using exponential backoff
     mock_sleep.assert_has_calls(calls=[
@@ -180,10 +180,10 @@ def test_attest_platform_success(maa_provider, mocker):
     assert result == 'encoded_token_value'
 
 
-def test_attest_platform_fails_with_http_400_after_retries(maa_provider, mocker):
+def test_attest_platform_fails_with_http_401_after_retries(maa_provider, mocker):
   # Create a mock response object with failing attributes
   mock_response = MagicMock()
-  mock_response.status_code = 400
+  mock_response.status_code = 401
   mock_response.text = 'platform_http_error'
 
   with patch('time.sleep', return_value=None) as mock_sleep:
@@ -191,7 +191,7 @@ def test_attest_platform_fails_with_http_400_after_retries(maa_provider, mocker)
       with patch('requests.post', return_value=mock_response) as mock_post:
         maa_provider.attest_guest({'dummy_key': 'dummy_value'})
       assert mock_post.call_count == 5
-    assert f'Unexpected status code: 400, error: {mock_response.text}' in str(excinfo.value)
+    assert f'Unexpected status code: 401, error: {mock_response.text}' in str(excinfo.value)
   
   # request should be sent using exponential backoff
   mock_sleep.assert_has_calls(calls=[
@@ -217,3 +217,50 @@ def test_attest_platform_fails_with_exception_after_retries(maa_provider, mocker
     call(4),
     call(8)])
   assert mock_sleep.call_count == 4
+
+
+def test_attest_platform_returns_None_after_http_response_400(maa_provider, mocker):
+  # Create a mock response object with passing attributes
+  mock_response = MagicMock()
+  mock_response.status_code = 400
+  mock_response.text = 'some_failure_from_provider'
+  mocker.patch('requests.post', return_value=mock_response)
+
+ # Call attest platform 
+  evidence = 'some_base64url_encoded_evidence'
+  runtimes_data = 'some_base64url_encoded_data'
+  maa_provider.isolation = IsolationType.SEV_SNP
+  result = maa_provider.attest_platform(evidence, runtimes_data)
+
+  assert result == None
+
+
+def test_attest_guest_returns_None_after_http_response_400(maa_provider, mocker):
+  # Create a mock response object with passing attributes
+  mock_response = MagicMock()
+  mock_response.status_code = 400
+  mock_response.text = 'some_failure_from_provider'
+  mocker.patch('requests.post', return_value=mock_response)
+
+ # Call attest platform 
+  # Call attest guest 
+  evidence = {'dummy_key': 'dummy_value'}
+  maa_provider.isolation = IsolationType.SEV_SNP
+  result = maa_provider.attest_guest(evidence)
+
+  assert result == None
+
+# def test_attest_platform_success(maa_provider, mocker):
+#   # Create a mock response object with passing attributes
+#   mock_response = MagicMock()
+#   mock_response.status_code = 200
+#   mock_response.text = '{"token": "encoded_token_value"}'
+#   mocker.patch('requests.post', return_value=mock_response)
+
+#   # Call attest platform 
+#   evidence = 'some_base64url_encoded_evidence'
+#   runtimes_data = 'some_base64url_encoded_data'
+#   maa_provider.isolation = IsolationType.SEV_SNP
+#   result = maa_provider.attest_platform(evidence, runtimes_data)
+
+#   assert result == 'encoded_token_value'
