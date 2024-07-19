@@ -15,6 +15,7 @@ from AttestationTypes import TpmInfo
 from src.measurements import get_measurements
 from src.Encoder import Encoder, urlsafe_b64decode
 from tpm_wrapper import TssWrapper
+from requests.exceptions import RequestException
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
