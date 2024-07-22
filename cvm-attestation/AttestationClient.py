@@ -4,6 +4,7 @@
 # Licensed under the MIT license.
 
 import json
+import time
 from enum import Enum
 from src.OsInfo import OsInfo
 from src.Isolation import IsolationType, IsolationInfo
