@@ -88,7 +88,7 @@ class ImdsClient:
       'Metadata': 'true'
     }
 
-    # Request Vcek Certificate with 5 retries delaying by 1 second each request
+    # Request Vcek Certificate with 5 retries, increasing delay by 2x each request
     delay = 1
     max_retries = 5
     retries = 0
@@ -119,6 +119,7 @@ class ImdsClient:
 
           self.log.info(f"Retrying in {delay} seconds... Attempt {retries}")
           time.sleep(delay)
+          delay *= 2
       except requests.exceptions.RequestException as e:
         self.log.error("Exception while fetching vcek certificate", exc_info=True)
 
