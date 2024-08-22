@@ -5,6 +5,7 @@
 
 from hashlib import sha512, sha256
 import json
+import time
 from external.TSS_MSR.src.Tpm import *
 from AttestationTypes import *
 from external.TSS_MSR.src.Crypt import Crypto as crypto
@@ -43,8 +44,8 @@ class TssWrapper:
     tpm = Tpm()
     tpm.connect()
 
-    attributes =  TPMA_NV.OWNERWRITE | TPMA_NV.OWNERREAD
-    attributes |=  TPMA_NV.AUTHWRITE | TPMA_NV.AUTHREAD
+    attributes = TPMA_NV.OWNERWRITE | TPMA_NV.OWNERREAD
+    attributes |= TPMA_NV.AUTHWRITE | TPMA_NV.AUTHREAD
 
     auth = TPM_HANDLE(TPM_RH.OWNER)
     nvIndex = TPM_HANDLE(int(index, 16))
@@ -70,28 +71,53 @@ class TssWrapper:
   def read_nv_index(self, index):
     tpm = Tpm()
     tpm.connect()
+    
+    self.log.info("Reading NV Index...")
 
-    handle = TPM_HANDLE(int(index, 16))
-    response = tpm.NV_ReadPublic(handle)
+    # Initialize handles
     auth = TPM_HANDLE(TPM_RH.OWNER)
+    handle = TPM_HANDLE(int(index, 16))
+    response = tpm.allowErrors().NV_ReadPublic(handle)
 
-    total_bytes_to_read = response.nvPublic.dataSize
-    bytes_read = 0
-    buffer_size = 1024
+    retry_count = 0
+    max_retries = 5
+    success = False
+
+    # Keeps retrying the vTPM read to avoid transient issues
+    while not success and retry_count < max_retries:
+      response = tpm.allowErrors().NV_ReadPublic(handle)
+      if tpm.lastResponseCode == TPM_RC.SUCCESS:
+        self.log.info("NV Index read succeeded")
+        success = True
+      else:
+        self.log.error("Failed to read NV Index")
+        time.sleep(5)
+        retry_count += 1
 
     # store the hcl report
     hcl_report = b''
 
-    while bytes_read < total_bytes_to_read:
-      # Calculate how many bytes to read in this iteration
-      bytes_to_read = min(buffer_size, total_bytes_to_read - bytes_read)
+    if not success:
+      self.log.error("Failed to read Public Index after {} retries".format(max_retries))
+    else:
+      self.log.info("Reading bytes from NV Index...")
 
-      # Read the data into the buffer
-      data = tpm.NV_Read(auth, handle , bytes_to_read, bytes_read)
-      hcl_report = hcl_report + data
+      total_bytes_to_read = response.nvPublic.dataSize
+      bytes_read = 0
+      buffer_size = 1024
 
-      # Update the total bytes read
-      bytes_read += bytes_to_read
+      while bytes_read < total_bytes_to_read:
+        # Calculate how many bytes to read in this iteration
+        bytes_to_read = min(buffer_size, total_bytes_to_read - bytes_read)
+
+        # Read the data into the buffer
+        data = tpm.NV_Read(auth, handle , bytes_to_read, bytes_read)
+        hcl_report = hcl_report + data
+
+        # Update the total bytes read
+        bytes_read += bytes_to_read
+
+      self.log.info("Finished reading HCL report bytes")
 
     tpm.close()
 
