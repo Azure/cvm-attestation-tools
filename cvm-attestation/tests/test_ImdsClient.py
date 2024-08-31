@@ -12,7 +12,8 @@ from src.ImdsClient import ImdsClient, TDQuoteException, VcekCertException
 # Some mock data
 snp_data = {
     'vcekCert': 'some_cert',
-    'certificateChain': 'some_chain'
+    'certificateChain': 'some_chain',
+    'tcbm': 'some_tcb_number'
 }
 tdx_data = {'quote': 'some_evidence'}
 
