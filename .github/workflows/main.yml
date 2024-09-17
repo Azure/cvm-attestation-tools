@@ -40,4 +40,4 @@ jobs:
           sudo zip attest.zip ${{ github.workspace }}/cvm-attestation/dist/attest/* -r
       - uses: actions/upload-artifact@v4
         with:
-          path: .\attest.zip
+          path: attest.zip
