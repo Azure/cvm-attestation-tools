@@ -32,7 +32,7 @@ jobs:
         run: |
           cd ${{ github.workspace }}/cvm-attestation
           ./install.sh
-          pip install pyinstaller
+          sudo pip install pyinstaller
           sudo pyinstaller ./attest.py
       - name: Zip
         shell: bash
