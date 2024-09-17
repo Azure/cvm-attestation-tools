@@ -11,6 +11,7 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
-          cd ${{ github.workspace }}/cvm-attestation
+          cd ${{ github.workspace }}\cvm-attestation
           .\install.ps1
-          attest
+          pip install pyinstaller
+          pyinstaller .\attest.py
