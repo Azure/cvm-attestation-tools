@@ -2,25 +2,25 @@ name: Build cvm-attestation with PyInstaller
 run-name: Build cvm-attestation with PyInstaller 🚀
 on: [push]
 jobs:
-  Build-On-Windows:
-    runs-on: windows-2022
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-      - name: Build
-        shell: pwsh
-        run: |
-          cd ${{ github.workspace }}\cvm-attestation
-          .\install.ps1
-          pip install pyinstaller
-          pyinstaller .\attest.py
-      - name: Zip
-        shell: pwsh
-        run: |
-          Compress-Archive ${{ github.workspace }}\cvm-attestation\dist\attest\* attest.zip
-      - uses: actions/upload-artifact@v4
-        with:
-          path: .\attest.zip
+  # Build-On-Windows:
+  #   runs-on: windows-2022
+  #   steps:
+  #     - name: Check out repository code
+  #       uses: actions/checkout@v4
+  #     - name: Build
+  #       shell: pwsh
+  #       run: |
+  #         cd ${{ github.workspace }}\cvm-attestation
+  #         .\install.ps1
+  #         pip install pyinstaller
+  #         pyinstaller .\attest.py
+  #     - name: Zip
+  #       shell: pwsh
+  #       run: |
+  #         Compress-Archive ${{ github.workspace }}\cvm-attestation\dist\attest\* attest.zip
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         path: .\attest.zip
           
   Build-On-Linux:
     runs-on: ubuntu-22.04
