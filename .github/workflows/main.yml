@@ -37,7 +37,7 @@ jobs:
       - name: Zip
         shell: bash
         run: |
-          zip ${{ github.workspace }}/cvm-attestation/dist/attest/* attest.zip
+          sudo zip ${{ github.workspace }}/cvm-attestation/dist/attest/* attest.zip
       - uses: actions/upload-artifact@v4
         with:
           path: .\attest.zip
