@@ -7,7 +7,6 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-      - run: echo "🍏 This job's status is ${{ job.status }}."
       - name: Build
         shell: pwsh
         run: |
@@ -19,6 +18,26 @@ jobs:
         shell: pwsh
         run: |
           Compress-Archive ${{ github.workspace }}\cvm-attestation\dist\attest\* attest.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          path: .\attest.zip
+          
+  Build-On-Linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Build
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}\cvm-attestation
+          .\install.sh
+          pip install pyinstaller
+          pyinstaller .\attest.py
+      - name: Zip
+        shell: bash
+        run: |
+          zip ${{ github.workspace }}\cvm-attestation\dist\attest\* attest.zip
       - uses: actions/upload-artifact@v4
         with:
           path: .\attest.zip
