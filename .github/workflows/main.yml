@@ -30,14 +30,14 @@ jobs:
       - name: Build
         shell: bash
         run: |
-          cd ${{ github.workspace }}\cvm-attestation
-          .\install.sh
+          cd ${{ github.workspace }}/cvm-attestation
+          ./install.sh
           pip install pyinstaller
-          pyinstaller .\attest.py
+          pyinstaller ./attest.py
       - name: Zip
         shell: bash
         run: |
-          zip ${{ github.workspace }}\cvm-attestation\dist\attest\* attest.zip
+          zip ${{ github.workspace }}/cvm-attestation/dist/attest/* attest.zip
       - uses: actions/upload-artifact@v4
         with:
           path: .\attest.zip
