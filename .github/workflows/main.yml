@@ -16,4 +16,5 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
-          .\cvm-attestation-tools\cvm-attestation\install.ps1
+          cd ${{ github.workspace }}
+          .\cvm-attestation\install.ps1
