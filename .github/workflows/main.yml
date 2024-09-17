@@ -1,8 +1,8 @@
-name: GitHub Actions Demo
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+name: Build cvm-attestation with PyInstaller
+run-name: Build cvm-attestation with PyInstaller 🚀
 on: [push]
 jobs:
-  Explore-GitHub-Actions:
+  Build-On-Windows:
     runs-on: windows-2022
     steps:
       - name: Check out repository code
@@ -15,3 +15,10 @@ jobs:
           .\install.ps1
           pip install pyinstaller
           pyinstaller .\attest.py
+      - name: Zip
+        shell: pwsh
+        run: |
+          Compress-Archive ${{ github.workspace }}\cvm-attestation\dist\attest\* attest.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          path: .\attest.zip
