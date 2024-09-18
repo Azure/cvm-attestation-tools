@@ -21,7 +21,7 @@ jobs:
           Compress-Archive ${{ github.workspace }}\cvm-attestation\dist\attest\* attest.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: attest-win.zip
+          name: attest-win
           path: .\attest.zip
           
   Build-On-Linux:
@@ -44,5 +44,5 @@ jobs:
           sudo zip attest.zip ./* -r
       - uses: actions/upload-artifact@v4
         with:
-          name: attest-lin.zip
+          name: attest-lin
           path: ${{ github.workspace }}/cvm-attestation/dist/attest/attest.zip
