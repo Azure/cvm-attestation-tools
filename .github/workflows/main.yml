@@ -22,7 +22,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: attest-win
-          path: .\attest.zip
+          path: ${{ github.workspace }}\cvm-attestation\dist\attest\*
           
   Build-On-Linux:
     runs-on: ubuntu-22.04
@@ -45,4 +45,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: attest-lin
-          path: ${{ github.workspace }}/cvm-attestation/dist/attest/attest.zip
+          path: ${{ github.workspace }}/cvm-attestation/dist/attest/*
