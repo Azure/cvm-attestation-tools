@@ -38,7 +38,8 @@ class AttestException(Exception):
 @click.command()
 @click.option('--c', type=str, help = 'Config json file')
 @click.option('--t', type=click.Choice(['Guest', 'Platform'], case_sensitive=False), default='Platform', help='Attestation type: Guest or Platform (Default)')
-def attest(c, t):
+@click.option('--r', '-read', type=click.Choice(['snp_report', 'td_quote'], case_sensitive=True), default='snp_report', help='Dump hardware report: td_quote or snp_report (Default)')
+def attest(c, t, r):
   # create a new console logger
   logger = Logger('logger').get_logger()
   logger.info("Attestation started...")
@@ -60,6 +61,12 @@ def attest(c, t):
 
   # Attest based on user configuration
   attestation_client = AttestationClient(logger, client_parameters)
+
+  # Read hardware report and dumps the binary into a file
+  if r:
+    logger.info('Reading hardware report...')
+    # attestation_client.get_hardware_report()
+    # attestation_client.get_hw_report()
 
   parsed_endpoint = urlparse(endpoint)
   if not parsed_endpoint.scheme or not parsed_endpoint.netloc:
