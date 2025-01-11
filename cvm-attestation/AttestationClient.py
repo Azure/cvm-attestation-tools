@@ -89,10 +89,10 @@ class AttestationClient():
     self.log = logger
 
     self.provider = MAAProvider(logger,isolation_type,endpoint) if verifier == Verifier.MAA else ITAProvider(logger,isolation_type,endpoint, api_key) if verifier == Verifier.ITA else None
-  
+
   def attest_guest(self):
     """
-    Attest the Guest
+    Attest the Hardware and Guest
     """
 
     # Attest the platform using exponential backoff
@@ -216,6 +216,7 @@ class AttestationClient():
 
   def attest_platform(self):
     """
+    Attest the Hardware
     """
 
     # Attest the platform using exponential backoff
@@ -289,25 +290,16 @@ class AttestationClient():
             f"Request failed after all retries have been exhausted. Error: {e}"
           )
 
-
   def get_hardware_report(self):
     try:
-      self.log.info('Attesting Platform Evidence...')
+      self.log.info('Fetching hardware report...')
 
       tss_wrapper = TssWrapper(self.log)
-      isolation_type = self.parameters.isolation_type
       # Extract Hardware Report and Runtime Data
       hcl_report = tss_wrapper.get_hcl_report(self.parameters.user_claims)
       report_type = ReportParser.extract_report_type(hcl_report)
-      # runtime_data = ReportParser.extract_runtimes_data(hcl_report)
       hw_report = ReportParser.extract_hw_report(hcl_report)
 
       return hw_report
-      # if report_type == 'tdx' and isolation_type == IsolationType.TDX:
-      #   # encoded_hw_evidence = imds_client.get_td_quote(encoded_report)
-      # elif report_type == 'snp' and isolation_type == IsolationType.SEV_SNP:
-      #   # ad
-      # else:
-
     except Exception as e:
       self.log.error(f"Error while reading hardware report. Exception {e}")

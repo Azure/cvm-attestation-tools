@@ -9,7 +9,7 @@ setup(
     name='attest',
     version='0.1',
     packages=find_packages(),
-    py_modules=['attest', 'tpm_wrapper', 'AttestationClient', 'AttestationTypes'],  # Include the attest module
+    py_modules=['attest', 'tpm_wrapper', 'AttestationClient', 'AttestationTypes', 'snp.py'],  # Include the attest module
     install_requires=[
         'Click',
     ],
