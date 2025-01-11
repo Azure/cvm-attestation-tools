@@ -62,10 +62,10 @@ def handle_hardware_report(report_type, output_path, attestation_client):
       save_to_file(output_path, report_binary)
       logger.info(f"Report saved to: {output_path}")
 
-    elif report_type == 'td_quote':
-      logger.info("TD Quote report option is not implemented yet.")
-    else:
-      raise ValueError(f"Invalid hardware report type: {report_type}")
+  elif report_type == 'td_quote':
+    logger.info("TD Quote report option is not implemented yet.")
+  else:
+    raise ValueError(f"Invalid hardware report type: {report_type}")
 
 
 def save_to_file(file_path, content):
