@@ -49,8 +49,8 @@ def attest(c, t, r):
   logger.info("Attestation started...")
   logger.info(c)
 
-  # try:
   attestation_type = t
+  file_path = 'report.bin'
 
   # creates an attestation parameters based on user's config
   config_json = parse_config_file(c)
@@ -65,12 +65,12 @@ def attest(c, t, r):
 
   # Attest based on user configuration
   attestation_client = AttestationClient(logger, client_parameters)
+  hw_report = attestation_client.get_hardware_report()
 
-  # Read hardware report and dumps the binary into a file
-  if r:
-    logger.info('Reading hardware report...')
-    # attestation_client.get_hardware_report()
-    # attestation_client.get_hw_report()
+  # Store hardware report
+  with open(file_path, 'wb') as file:
+    file.write(hw_report)
+  logger.info(f"Output successfully written to: {file_path}")
 
   parsed_endpoint = urlparse(endpoint)
   if not parsed_endpoint.scheme or not parsed_endpoint.netloc:
