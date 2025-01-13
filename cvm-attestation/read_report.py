@@ -2,7 +2,7 @@ import click
 from AttestationClient import AttestationClient, AttestationClientParameters, Verifier
 from src.Isolation import IsolationType
 from src.Logger import Logger
-from snp import SNP_VM_REPORT
+from snp import AttestationReport
 
 
 DEFAULT_ENDPOINT = 'https://sharedweu.weu.attest.azure.net/attest/SevSnpVm?api-version=2022-08-01'
@@ -11,7 +11,7 @@ DEFAULT_ENDPOINT = 'https://sharedweu.weu.attest.azure.net/attest/SevSnpVm?api-v
 @click.option(
   '--t', '-type',
   type=click.Choice(['snp_report', 'td_quote'], case_sensitive=True),
-  required=True,
+  default='snp_report',
   help='Specify the type of hardware report to dump: snp_report or td_quote.'
 )
 @click.option(
@@ -52,16 +52,20 @@ def handle_hardware_report(report_type, output_path, attestation_client):
   if report_type == 'snp_report':
     # Retrieve and deserialize the SNP report
     report_binary = attestation_client.get_hardware_report()
-    report = SNP_VM_REPORT.deserialize(report_binary)
+    report = AttestationReport.deserialize(report_binary)
 
     # Display the report
     report.display()
 
+    filename = 'report.bin'
     # Optionally save the report to a file
     if output_path:
-      save_to_file(output_path, report_binary)
-      logger.info(f"Report saved to: {output_path}")
+      filename = output_path
 
+    save_to_file(filename, report_binary)
+    logger.info(f"Report saved to: {filename}")
+
+    logger.info("Got attestation report successfully!")
   elif report_type == 'td_quote':
     logger.info("TD Quote report option is not implemented yet.")
   else:
