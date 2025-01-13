@@ -125,6 +125,10 @@ class KeyInfo:
 
 
 class AttestationReport:
+    """
+    Defines an AttestationReport class from the SEV-SNP attestation report.
+    Source: https://github.com/virtee/sev/blob/f9c6abe7b021cdf9e5c03c56169d4d479fc64464/src/firmware/guest/types/snp.rs#L127C1-L127C31.
+    """
   # Define the structure's format string as a class-level constant
   FORMAT_STRING = (
     '<IIQ16s16sII'  # version, guest_svn, policy, family_id, image_id, vmpl, sig_algo
@@ -193,6 +197,9 @@ class AttestationReport:
     self.signature = Signature()
 
   def serialize(self):
+    """
+    Serializes an AttestationReport instance into a binary blob.
+    """
     return struct.pack(
       self.FORMAT_STRING,
       self.version,                     # int
@@ -234,7 +241,7 @@ class AttestationReport:
   @classmethod
   def deserialize(cls, data):
     """
-    Deserialize a binary blob into an instance of the class.
+    Deserialize a binary blob into an instance of the AttestationReport class.
     """
     unpacked_data = struct.unpack(cls.FORMAT_STRING, data)
 

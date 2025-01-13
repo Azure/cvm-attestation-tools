@@ -23,6 +23,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
+from snp import AttestationReport
+
 # The version number of the attestation protocol between the client and the service.
 PROTOCOL_VERSION = "2.0"
 
@@ -110,6 +112,10 @@ class AttestationClient():
         report_type = ReportParser.extract_report_type(hcl_report)
         runtime_data = ReportParser.extract_runtimes_data(hcl_report)
         hw_report = ReportParser.extract_hw_report(hcl_report)
+
+        # Logs important SNP fields from the hardware report
+        self.log_snp_report(hw_report)
+
         cert_chain = imds_client.get_vcek_certificate()
 
         # Collect guest attestation parameters
@@ -245,6 +251,9 @@ class AttestationClient():
         if report_type == 'tdx' and isolation_type == IsolationType.TDX:
           encoded_hw_evidence = imds_client.get_td_quote(encoded_report)
         elif report_type == 'snp' and isolation_type == IsolationType.SEV_SNP:
+          # Logs important SNP fields from the hardware report
+          self.log_snp_report(hw_report)
+
           cert_chain = imds_client.get_vcek_certificate()
           snp_report = {
             'SnpReport': encoded_report,
@@ -290,9 +299,12 @@ class AttestationClient():
             f"Request failed after all retries have been exhausted. Error: {e}"
           )
 
+
   def get_hardware_report(self):
     try:
-      self.log.info('Fetching hardware report...')
+      self.log.info('Parsing hardware report...')
+
+      isolation_type = self.parameters.isolation_type
 
       tss_wrapper = TssWrapper(self.log)
       # Extract Hardware Report and Runtime Data
@@ -300,6 +312,33 @@ class AttestationClient():
       report_type = ReportParser.extract_report_type(hcl_report)
       hw_report = ReportParser.extract_hw_report(hcl_report)
 
+      if report_type == 'snp' and isolation_type == IsolationType.SEV_SNP:
+        self.log_snp_report(hw_report)
+      else:
+        self.log.error("Hardware report not supported")
+
       return hw_report
     except Exception as e:
       self.log.error(f"Error while reading hardware report. Exception {e}")
+  
+  def log_snp_report(self, hw_report):
+    """
+    Logs snp snp attestation report fields.
+    """
+    report_instance = AttestationReport.deserialize(hw_report)
+    self.log.info(f"Attestation report size: {len(hw_report)} bytes")
+    self.log.info(f"Report version: {report_instance.version}")
+    self.log.info(f"Report guest svn: {report_instance.guest_svn}")
+
+    formatted_tcb = "".join(f"{byte:02X}" for byte in report_instance.current_tcb.serialize())
+    self.log.info(f"Current TCB version: {formatted_tcb}")
+
+    formatted_tcb = "".join(f"{byte:02X}" for byte in report_instance.reported_tcb.serialize())
+    self.log.info(f"Reported TCB version: {formatted_tcb}")
+
+    formatted_tcb = "".join(f"{byte:02X}" for byte in report_instance.committed_tcb.serialize())
+    self.log.info(f"Commited TCB version: {formatted_tcb}")
+
+    formatted_tcb = "".join(f"{byte:02X}" for byte in report_instance.launch_tcb.serialize())
+    self.log.info(f"Launched TCB version: {formatted_tcb}")
+
