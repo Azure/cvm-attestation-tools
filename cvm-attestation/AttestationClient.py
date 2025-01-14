@@ -320,7 +320,8 @@ class AttestationClient():
       return hw_report
     except Exception as e:
       self.log.error(f"Error while reading hardware report. Exception {e}")
-  
+
+
   def log_snp_report(self, hw_report):
     """
     Logs snp snp attestation report fields.
@@ -330,15 +331,15 @@ class AttestationClient():
     self.log.info(f"Report version: {report_instance.version}")
     self.log.info(f"Report guest svn: {report_instance.guest_svn}")
 
-    formatted_tcb = "".join(f"{byte:02X}" for byte in report_instance.current_tcb.serialize())
+    formatted_tcb = "".join(f"{byte:02X}" for byte in report_instance.current_tcb.serialize()[::-1])
     self.log.info(f"Current TCB version: {formatted_tcb}")
 
-    formatted_tcb = "".join(f"{byte:02X}" for byte in report_instance.reported_tcb.serialize())
+    formatted_tcb = "".join(f"{byte:02X}" for byte in report_instance.reported_tcb.serialize()[::-1])
     self.log.info(f"Reported TCB version: {formatted_tcb}")
 
-    formatted_tcb = "".join(f"{byte:02X}" for byte in report_instance.committed_tcb.serialize())
+    formatted_tcb = "".join(f"{byte:02X}" for byte in report_instance.committed_tcb.serialize()[::-1])
     self.log.info(f"Commited TCB version: {formatted_tcb}")
 
-    formatted_tcb = "".join(f"{byte:02X}" for byte in report_instance.launch_tcb.serialize())
+    formatted_tcb = "".join(f"{byte:02X}" for byte in report_instance.launch_tcb.serialize()[::-1])
     self.log.info(f"Launched TCB version: {formatted_tcb}")
 
