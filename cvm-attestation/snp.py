@@ -36,7 +36,7 @@ class TcbVersion:
 
   def serialize(self):
     return struct.pack(
-      '>Q',
+      '<Q',
       (self.microcode << 56)
       | (self.snp << 48)
       | (self.reserved << 16)
@@ -65,7 +65,7 @@ class PlatformInfo:
     self.reserved = reserved
 
   def serialize(self):
-    return (
+    value = (
       (self.reserved << 5)
       | (self.ciphertext_hiding_enabled << 4)
       | (self.rapl_disabled << 3)
@@ -73,6 +73,7 @@ class PlatformInfo:
       | (self.tsme_enabled << 1)
       | self.smt_enabled
     )
+    return struct.pack('<Q', value)  # '<Q' packs an unsigned 8-byte integer
 
   @classmethod
   def deserialize(cls, data):
@@ -125,10 +126,10 @@ class KeyInfo:
 
 
 class AttestationReport:
-    """
-    Defines an AttestationReport class from the SEV-SNP attestation report.
-    Source: https://github.com/virtee/sev/blob/f9c6abe7b021cdf9e5c03c56169d4d479fc64464/src/firmware/guest/types/snp.rs#L127C1-L127C31.
-    """
+  """
+  Defines an AttestationReport class from the SEV-SNP attestation report.
+  Source: https://github.com/virtee/sev/blob/f9c6abe7b021cdf9e5c03c56169d4d479fc64464/src/firmware/guest/types/snp.rs#L127C1-L127C31.
+  """
   # Define the structure's format string as a class-level constant
   FORMAT_STRING = (
     '<IIQ16s16sII'  # version, guest_svn, policy, family_id, image_id, vmpl, sig_algo
@@ -200,6 +201,7 @@ class AttestationReport:
     """
     Serializes an AttestationReport instance into a binary blob.
     """
+    print('here', type(self.current_tcb.serialize()))
     return struct.pack(
       self.FORMAT_STRING,
       self.version,                     # int
@@ -209,9 +211,9 @@ class AttestationReport:
       bytes(self.image_id),             # bytes
       self.vmpl,                        # int
       self.sig_algo,                    # int
-      self.current_tcb.serialize(),     # Should return bytes or int (Q)
-      self.plat_info.serialize(),       # Should return bytes or int (Q)
-      self.key_info.serialize(),        # Should return bytes or int (I)
+      int.from_bytes(self.current_tcb.serialize(), byteorder='little'),     # Should return bytes or int (Q)
+      int.from_bytes(self.plat_info.serialize(), byteorder='little'),    # Serialize PlatformInfo to int (Q)
+      int.from_bytes(self.key_info.serialize(), byteorder='little'),     # Serialize KeyInfo to int (I)
       self._reserved_0,                 # int
       bytes(self.report_data),          # bytes
       bytes(self.measurement),          # bytes
@@ -220,10 +222,10 @@ class AttestationReport:
       bytes(self.author_key_digest),    # bytes
       bytes(self.report_id),            # bytes
       bytes(self.report_id_ma),         # bytes
-      self.reported_tcb.serialize(),    # Should return bytes or int (Q)
+      int.from_bytes(self.reported_tcb.serialize(), byteorder='little'),    # Should return bytes or int (Q)
       bytes(self._reserved_1),          # bytes
       bytes(self.chip_id),              # bytes
-      self.committed_tcb.serialize(),   # Should return bytes or int (Q)
+      int.from_bytes(self.committed_tcb.serialize(), byteorder='little'),   # Should return bytes or int (Q)
       self.current_build,               # int
       self.current_minor,               # int
       self.current_major,               # int
@@ -232,9 +234,9 @@ class AttestationReport:
       self.committed_minor,             # int
       self.committed_major,             # int
       self._reserved_3,                 # int
-      self.launch_tcb.serialize(),      # Should return bytes or int (Q)
+      int.from_bytes(self.launch_tcb.serialize(), byteorder='little'),      # Should return bytes or int (Q)
       bytes(self._reserved_4),          # bytes
-      self.signature.serialize()        # Should return bytes (512 bytes)
+      self.signature.serialize() # Should return bytes (512 bytes)
     )
 
 

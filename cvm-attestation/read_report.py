@@ -62,7 +62,8 @@ def handle_hardware_report(report_type, output_path, attestation_client):
     if output_path:
       filename = output_path
 
-    save_to_file(filename, report_binary)
+    with open(filename, 'wb') as file:
+      file.write(report_binary)
     logger.info(f"Report saved to: {filename}")
 
     logger.info("Got attestation report successfully!")
@@ -70,15 +71,6 @@ def handle_hardware_report(report_type, output_path, attestation_client):
     logger.info("TD Quote report option is not implemented yet.")
   else:
     raise ValueError(f"Invalid hardware report type: {report_type}")
-
-
-def save_to_file(file_path, content):
-  """
-  Save binary content to the specified file path.
-  """
-  with open(file_path, 'wb') as file:
-    file.write(content)
-  print(f"Output successfully written to: {file_path}")
 
 
 if __name__ == "__main__":
