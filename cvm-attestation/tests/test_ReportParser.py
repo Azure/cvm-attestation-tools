@@ -3,11 +3,14 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
+import os
 import pytest
 from src.ReportParser import ReportParser
 
 def read_hcl_report():
-    file = open("tests/report.bin","rb")
+    current_dir = os.path.dirname(__file__)
+    file_path = os.path.join(current_dir, "report.bin")
+    file = open(file_path,"rb")
     hcl_report = file.read()
     file.close()
 
