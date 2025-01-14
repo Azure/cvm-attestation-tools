@@ -36,17 +36,17 @@ class TcbVersion:
 
   def serialize(self):
     return struct.pack(
-      '<Q',
-      (self.microcode << 56)
-      | (self.snp << 48)
-      | (self.reserved << 16)
+      '<Q',  # Little-endian unsigned 64-bit integer
+      (self.bootloader)
       | (self.tee << 8)
-      | self.bootloader
+      | (self.reserved << 16)
+      | (self.snp << 48)
+      | (self.microcode << 56)
     )
 
   @classmethod
   def deserialize(cls, data):
-    unpacked_data = struct.unpack('<Q', data)[0]
+    unpacked_data = struct.unpack('<Q', data)[0] # Little-endian unsigned 64-bit integer
     return cls(
       bootloader=unpacked_data & 0xFF,
       tee=(unpacked_data >> 8) & 0xFF,
@@ -73,11 +73,11 @@ class PlatformInfo:
       | (self.tsme_enabled << 1)
       | self.smt_enabled
     )
-    return struct.pack('<Q', value)  # '<Q' packs an unsigned 8-byte integer
+    return struct.pack('<Q', value)  # Little-endian unsigned 64-bit integer
 
   @classmethod
   def deserialize(cls, data):
-    unpacked_data = struct.unpack('<Q', data)[0]
+    unpacked_data = struct.unpack('<Q', data)[0] # Little-endian unsigned 64-bit integer
     return cls(
       smt_enabled=unpacked_data & 0x1,
       tsme_enabled=(unpacked_data >> 1) & 0x1,
@@ -329,7 +329,7 @@ class AttestationReport:
     print()
 
     current_tcb = self.current_tcb.serialize()
-    formatted_tcb = "".join(f"{byte:02X}" for byte in current_tcb)
+    formatted_tcb = "".join(f"{byte:02X}" for byte in current_tcb[::-1])
     print(f"Current TCB: {formatted_tcb}")
     print(f"  Microcode:   {self.current_tcb.microcode}")
     print(f"  SNP:         {self.current_tcb.snp}")
@@ -371,7 +371,7 @@ class AttestationReport:
     print()
 
     reported_tcb = self.reported_tcb.serialize()
-    formatted_tcb = "".join(f"{byte:02X}" for byte in reported_tcb)
+    formatted_tcb = "".join(f"{byte:02X}" for byte in reported_tcb[::-1])
     print(f"Reported TCB:")
     print(f"TCB Version: {formatted_tcb}")
     print(f"  Microcode:   {self.reported_tcb.microcode}")
@@ -385,7 +385,7 @@ class AttestationReport:
     print()
 
     committed_tcb = self.committed_tcb.serialize()
-    formatted_tcb = "".join(f"{byte:02X}" for byte in committed_tcb)
+    formatted_tcb = "".join(f"{byte:02X}" for byte in committed_tcb[::-1])
     print(f"Commited TCB: {formatted_tcb}")
     print(f"  Microcode:   {self.committed_tcb.microcode}")
     print(f"  SNP:         {self.committed_tcb.snp}")
@@ -402,7 +402,7 @@ class AttestationReport:
     print()
 
     launch_tcb = self.launch_tcb.serialize()
-    formatted_tcb = "".join(f"{byte:02X}" for byte in launch_tcb)
+    formatted_tcb = "".join(f"{byte:02X}" for byte in launch_tcb[::-1])
     print(f"Launched TCB: {formatted_tcb}")
     print(f"  Microcode:   {self.launch_tcb.microcode}")
     print(f"  SNP:         {self.launch_tcb.snp}")
