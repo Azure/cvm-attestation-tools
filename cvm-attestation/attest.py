@@ -36,14 +36,19 @@ class AttestException(Exception):
   pass
 
 @click.command()
-@click.option('--c', type=str, help = 'Config json file')
+@click.option(
+  '--c',
+  type=str,
+  required=True,
+  help = 'Config json file',
+)
 @click.option(
   '--t',
   type=click.Choice(['Guest', 'Platform'], case_sensitive=False),
   default='Platform',
   help='Attestation type: Guest or Platform (Default)'
 )
-def attest(c, t, r):
+def attest(c, t):
   # create a new console logger
   logger = Logger('logger').get_logger()
   logger.info("Attestation started...")
