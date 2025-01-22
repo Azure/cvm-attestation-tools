@@ -1,6 +1,10 @@
 # Python Attestation Sample App
 Remote Attestation empowers a `relying party`, whether it be the workload owner or the user, to authenticate that their workload is operating on a platform equipped with `Intel TDX` technology before divulging sensitive information. In this instance, we undertake the assessment of the `Hardware Report's` integrity and trustworthiness through the services of an Attestation Provider. This application serves as an instructive demonstration highlighting the implementation of Remote Attestation using Python programming language.
 
+## Tools
+- [Attestation Tool](#attest)
+- [Rading Hardware Report Tool](#read_report-only-snp)
+
 ## Overview
 
 ![Attestation](img/attest.png)
@@ -17,41 +21,50 @@ For uninstalling the cli tool run the following command:
 pip3 uninstall attest -y
 ```
 
-## Run CLI Tool
+## Uninstall the `read_report` CLI Tool
+For uninstalling the cli tool run the following command:
+```
+pip3 uninstall read_report -y
+```
 
-### `--c` Config File Option
+## attest
+Tool to attest the CVM
+
+### Run CLI Tool
+
+#### `--c` Config File Option
 Option to set config file
 ```
 sudo attest  --c config_sample.json
 ```
 
-### `--t` Attestation Type Option
+#### `--t` Attestation Type Option
 Option to provide type of attestation to be run
 
-#### Platform
+##### Platform
 Attest the Hardware using the Machines Hardware Report
 ```
 sudo attest  --c config_sample.json --t Platform
 ```
 
-#### Guest
+##### Guest
 Attest the Hardware and the Guest measurements
 ```
 sudo attest  --c config_sample.json --t Guest
 ```
 > NOTE: Attesting the Guest is only supported in SEV-SNP CVM
 
-### SNP (MAA Only)
+#### SNP (MAA Only)
 ```
 sudo attest  --c config_snp.json
 ```
 
-### TDX with MAA
+#### TDX with MAA
 ```
 sudo attest  --c config_tdx.json
 ```
 
-### TDX with Intel Trust Authority
+#### TDX with Intel Trust Authority
 ```
 sudo attest  --c config_tdx_ita.json
 ```
@@ -60,8 +73,8 @@ sudo attest  --c config_tdx_ita.json
 
 The console output will contain the `Token` returned by the Attestation Provider as well as some of the claims parsed from the token.
 
-## TDX 
-### Attesting with MAA
+### TDX 
+#### Attesting with MAA
 ```
 Attested Platform Successfully!!
 
@@ -78,7 +91,7 @@ CVM Configuration:
         TPM Persisted:  False
 ```
 
-### Attesting with Intel Trust Authority
+#### Attesting with Intel Trust Authority
 ```
 Attested Platform Successfully!!
 
@@ -88,8 +101,8 @@ Claims:
         Evidence Type:  TDX
 ```
 
-## SEV-SNP
-### Attesting with MAA
+### SEV-SNP
+#### Attesting with MAA
 ```
 Attested Platform Successfully!!
 
@@ -105,4 +118,22 @@ CVM Configuration:
         Secure Boot Enabled:  True
         TPM Enabled:  True
         User Data:  00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+```
+
+## read_report (only SNP)
+Tool to read the Attestation report from the hardware the CVM is running on.
+
+### Run CLI Tool
+
+#### `--t` or `-type` Attestation Type (optional)
+Option to provide type of attestation to be run.
+```
+sudo read_report  --t snp_report
+```
+
+
+#### `--o` or `-out` Output filename (optional)
+The name of the output file to store the report
+```
+sudo read_report  --o report.bin
 ```

@@ -108,7 +108,7 @@ def test_vcek_cert_request_retries_if_error_code_is_returned(mocker, imds_client
                 imds_client.get_vcek_certificate()
             assert mock_post.call_count == 5
         assert 'Error 400: Error message' in str(excinfo.value)
-        mock_sleep.assert_called_with(1)
+        mock_sleep.assert_called_with(8)
         assert mock_sleep.call_count == 4
 
 
@@ -122,7 +122,7 @@ def test_vcek_cert_request_fails_with_http_400(mocker, imds_client):
         with pytest.raises(VcekCertException) as excinfo:
             imds_client.get_vcek_certificate()
         assert 'Error 400: Error message' in str(excinfo.value)
-        mock_sleep.assert_called_with(1)
+        mock_sleep.assert_called_with(8)
         assert mock_sleep.call_count == 4
 
 

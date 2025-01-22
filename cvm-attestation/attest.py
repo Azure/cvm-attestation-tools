@@ -36,16 +36,26 @@ class AttestException(Exception):
   pass
 
 @click.command()
-@click.option('--c', type=str, help = 'Config json file')
-@click.option('--t', type=click.Choice(['Guest', 'Platform'], case_sensitive=False), default='Platform', help='Attestation type: Guest or Platform (Default)')
+@click.option(
+  '--c',
+  type=str,
+  required=True,
+  help = 'Config json file',
+)
+@click.option(
+  '--t',
+  type=click.Choice(['Guest', 'Platform'], case_sensitive=False),
+  default='Platform',
+  help='Attestation type: Guest or Platform (Default)'
+)
 def attest(c, t):
   # create a new console logger
   logger = Logger('logger').get_logger()
   logger.info("Attestation started...")
   logger.info(c)
 
-  # try:
   attestation_type = t
+  file_path = 'report.bin'
 
   # creates an attestation parameters based on user's config
   config_json = parse_config_file(c)
@@ -60,6 +70,12 @@ def attest(c, t):
 
   # Attest based on user configuration
   attestation_client = AttestationClient(logger, client_parameters)
+  hw_report = attestation_client.get_hardware_report()
+
+  # Store hardware report
+  with open(file_path, 'wb') as file:
+    file.write(hw_report)
+  logger.info(f"Output successfully written to: {file_path}")
 
   parsed_endpoint = urlparse(endpoint)
   if not parsed_endpoint.scheme or not parsed_endpoint.netloc:
