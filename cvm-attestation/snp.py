@@ -386,7 +386,7 @@ class AttestationReport:
 
     committed_tcb = self.committed_tcb.serialize()
     formatted_tcb = "".join(f"{byte:02X}" for byte in committed_tcb[::-1])
-    print(f"Commited TCB: {formatted_tcb}")
+    print(f"Committed TCB: {formatted_tcb}")
     print(f"  Microcode:   {self.committed_tcb.microcode}")
     print(f"  SNP:         {self.committed_tcb.snp}")
     print(f"  TEE:         {self.committed_tcb.tee}")
