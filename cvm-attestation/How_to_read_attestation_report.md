@@ -1,9 +1,9 @@
-# Reading the SNP TCB Version from Attestation Report
+# Reading the SNP TCB Version from SNP Attestation Report
 
-This document provides a detailed guide on how to retrieve the Trusted Computing Base (TCB) version from an AMD Secure Encrypted Virtualization-Secure Nested Paging (SEV-SNP) CVM. The TCB version is crucial for verifying the security and integrity of the virtual machine environment. Follow the steps outlined below to accurately collect and interpret the TCB version information.
+This document provides a detailed guide on how to retrieve the Trusted Computing Base (TCB) version from an AMD Secure Encrypted Virtualization-Secure Nested Paging (SEV-SNP) Confidential VM. The TCB version is crucial for verifying the security and integrity of the virtual machine environment. Follow the steps outlined below to accurately collect and interpret the TCB version information.
 
 # Windows
-The following instructions are for Windows CVMs.
+The following instructions are for Windows Confidential VMs.
 
 ## Prerequisites
 Ensure that Git is installed on your system before proceeding with the following steps.
@@ -15,7 +15,6 @@ Download Git from the official Git website:
 > Once the executable is downloaded, follow the setup instructions provided by the installer.
 
 ### Option 2: Download using winget
-
 To download Git using the winget tool, follow these steps:
 
 1. Ensure that the winget tool is installed on your system. If it is not installed, you can download it from the official Microsoft documentation: [Install winget](https://learn.microsoft.com/en-us/windows/package-manager/winget/#install-winget).
@@ -25,8 +24,7 @@ To download Git using the winget tool, follow these steps:
   winget install --id Git.Git -e --source winget
   ```
 
-
-## Installing the CVM Attestation Tools
+## Installing the Confidential VM Attestation Tools for Windows
 1. Open PowerShell as an administrator.
 2. Clone the cvm-attestation-tools repository:
   ```powershell
@@ -40,16 +38,40 @@ To download Git using the winget tool, follow these steps:
   ```powershell
   .\install.ps1
   ```
-5. To retrieve the attestation report, run the following command:
-  ```powershell
-  .\read_report.ps1
-  ```
-  > **NOTE:** Ensure you run PowerShell as an administrator because the tool requires elevated privileges to access the Virtual TPM.
+
+### Sample Output
+After installing the dependencies, the output should look like the following:
+
+```
+> .\install.ps1
+Starting Install-Chocolatey...
+WARNING: 'choco' was found at 'C:\ProgramData\chocolatey\bin\choco.exe'.
+WARNING: An existing Chocolatey installation was detected. Installation will not continue. This script will not
+overwrite existing installations.
+
+...
+
+Installed c:\python310\lib\site-packages\attest-0.1-py3.10.egg
+Processing dependencies for attest==0.1
+Searching for click==8.1.8
+Best match: click 8.1.8
+Adding click 8.1.8 to easy-install.pth file
+
+Using c:\python310\lib\site-packages
+Searching for colorama==0.4.6
+Best match: colorama 0.4.6
+Adding colorama 0.4.6 to easy-install.pth file
+
+Using c:\python310\lib\site-packages
+Finished processing dependencies for attest==0.1
+```
+> **NOTE:** Ensure there are no errors and verify that the tools are installed successfully by checking for the message `Finished processing dependencies for attest==0.1`.
 
 
 # Linux
-The following instructions are for CVMs running Linux.
+The following instructions are for Confidential VMs running Linux.
 
+## Installing the Confidential VM Attestation Tools for Linux
 1. Open a terminal.
 2. Clone the cvm-attestation-tools repository:
   ```bash
@@ -63,7 +85,47 @@ The following instructions are for CVMs running Linux.
   ```bash
   sudo ./install.sh
   ```
-5. To retrieve the attestation report, run the following command:
+
+### Sample Output
+After installing the dependencies, the output should look like the following:
+
+```
+$ sudo ./install.sh 
+Updating package lists...
+Hit:1 http://azure.archive.ubuntu.com/ubuntu jammy InRelease
+Get:2 http://azure.archive.ubuntu.com/ubuntu jammy-updates InRelease [128 kB]
+Hit:3 http://azure.archive.ubuntu.com/ubuntu jammy-backports InRelease
+Get:4 http://azure.archive.ubuntu.com/ubuntu jammy-security InRelease [129 kB]
+Fetched 257 kB in 1s (482 kB/s)
+Reading package lists... Done
+Installing tpm2-tools and Python...
+
+...
+
+Installed /usr/local/lib/python3.10/dist-packages/attest-0.1-py3.10.egg
+Processing dependencies for attest==0.1
+Searching for click==8.0.3
+Best match: click 8.0.3
+Adding click 8.0.3 to easy-install.pth file
+
+Using /usr/lib/python3/dist-packages
+Finished processing dependencies for attest==0.1
+Installation completed successfully.
+```
+> **NOTE:** Ensure there are no errors and verify that the tools are installed successfully by checking for the message `Finished processing dependencies for attest==0.1`.
+
+
+
+# Retrieving the SNP Attestation Report
+## Windows
+To retrieve the attestation report, run the following command:
+  ```powershell
+  .\read_report.ps1
+  ```
+  > **NOTE:** Ensure you run PowerShell as an administrator because the tool requires elevated privileges to access the Virtual TPM.
+
+## Linux
+To retrieve the attestation report, run the following command:
   ```bash
   sudo ./read_report.sh
   ```
