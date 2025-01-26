@@ -1,20 +1,19 @@
-# Reading the SNP TCB Version from SNP Attestation Report
+# Reading the TCB Version from SNP Attestation Report
 
 This document provides a detailed guide on how to retrieve the Trusted Computing Base (TCB) version from an AMD Secure Encrypted Virtualization-Secure Nested Paging (SEV-SNP) Confidential VM. The TCB version is crucial for verifying the security and integrity of the virtual machine environment. Follow the steps outlined below to accurately collect and interpret the TCB version information.
 
-# Windows
+## 1. Install git to clone the required tools
+
+### _Windows_
 The following instructions are for Windows Confidential VMs.
 
-## Prerequisites
-Ensure that Git is installed on your system before proceeding with the following steps.
-
-### Option 1: Download from the Official Website
+#### Option 1: Download from the Official Website
 Download Git from the official Git website:
 [https://git-scm.com/downloads/win](https://git-scm.com/downloads/win)
 
 > Once the executable is downloaded, follow the setup instructions provided by the installer.
 
-### Option 2: Download using winget
+#### Option 2: Download using winget
 To download Git using the winget tool, follow these steps:
 
 1. Ensure that the winget tool is installed on your system. If it is not installed, you can download it from the official Microsoft documentation: [Install winget](https://learn.microsoft.com/en-us/windows/package-manager/winget/#install-winget).
@@ -24,7 +23,12 @@ To download Git using the winget tool, follow these steps:
   winget install --id Git.Git -e --source winget
   ```
 
-## Installing the Confidential VM Attestation Tools for Windows
+### _Linux_
+The git tools should already be part of the Linux guest
+
+## 2. Install the Confidential VM Attestation Tools
+
+### _Windows_
 1. Open PowerShell as an administrator.
 2. Clone the cvm-attestation-tools repository:
   ```powershell
@@ -39,9 +43,8 @@ To download Git using the winget tool, follow these steps:
   .\install.ps1
   ```
 
-### Sample Output
+#### Sample Output
 After installing the dependencies, the output should look like the following:
-
 ```
 > .\install.ps1
 Starting Install-Chocolatey...
@@ -68,10 +71,7 @@ Finished processing dependencies for attest==0.1
 > **NOTE:** Ensure there are no errors and verify that the tools are installed successfully by checking for the message `Finished processing dependencies for attest==0.1`.
 
 
-# Linux
-The following instructions are for Confidential VMs running Linux.
-
-## Installing the Confidential VM Attestation Tools for Linux
+### _Linux_
 1. Open a terminal.
 2. Clone the cvm-attestation-tools repository:
   ```bash
@@ -86,11 +86,11 @@ The following instructions are for Confidential VMs running Linux.
   sudo ./install.sh
   ```
 
-### Sample Output
+#### Sample Output
 After installing the dependencies, the output should look like the following:
 
 ```
-$ sudo ./install.sh 
+$ sudo ./install.sh
 Updating package lists...
 Hit:1 http://azure.archive.ubuntu.com/ubuntu jammy InRelease
 Get:2 http://azure.archive.ubuntu.com/ubuntu jammy-updates InRelease [128 kB]
@@ -114,52 +114,24 @@ Installation completed successfully.
 ```
 > **NOTE:** Ensure there are no errors and verify that the tools are installed successfully by checking for the message `Finished processing dependencies for attest==0.1`.
 
+## 3. Retrieving the SNP Attestation Report
 
-
-# Retrieving the SNP Attestation Report
-## Windows
+### _Windows_
 To retrieve the attestation report, run the following command:
   ```powershell
   .\read_report.ps1
   ```
   > **NOTE:** Ensure you run PowerShell as an administrator because the tool requires elevated privileges to access the Virtual TPM.
 
-## Linux
+### _Linux_
 To retrieve the attestation report, run the following command:
   ```bash
   sudo ./read_report.sh
   ```
   > **NOTE:** We use `sudo` to run the script with root privileges because the tool requires elevated permissions to access the Virtual TPM.
 
-## Reading TCB Version
-This tool displays the different TCB versions in HEX format (Big Endian) as well as in a human-readable format.
 
-### Breakdown Example
-```
-Current TCB: DB16000000000004
-  Microcode:   219
-  SNP:         22
-  TEE:         0
-  Boot Loader: 4
-```
-
-### Different TCB versions from Logs
-The logs provide various TCB versions, each representing a different state of the Trusted Computing Base. Below is an example of how these versions are logged:
-- **Current TCB version**: The TCB version currently in use.
-- **Reported TCB version**: The TCB version reported by the attestation report.
-- **Committed TCB version**: The TCB version that has been committed.
-- **Launched TCB version**: The TCB version at the time of the VM launch.
-
-These versions help in understanding the security posture and the integrity of the virtual machine environment.
-```
-2025-01-24 19:16:01,485 - log_snp_report - INFO - Current TCB version: DB16000000000004
-2025-01-24 19:16:01,485 - log_snp_report - INFO - Reported TCB version: D315000000000004
-2025-01-24 19:16:01,485 - log_snp_report - INFO - Committed TCB version: D515000000000004
-2025-01-24 19:16:01,485 - log_snp_report - INFO - Launched TCB version: D515000000000004
-```
-> By comparing these versions, we can verify that the TCB of the machine running the CVM aligns with AMD's released versions.
-
-# Full Output Sample
+#### Sample Output
 The output sample is a detailed log of the attestation process for a hardware report.
 
 ```
@@ -210,3 +182,31 @@ Current TCB: DB16000000000004
 2025-01-24 19:16:01,594 - handle_hardware_report - INFO - Report saved to: report.bin
 2025-01-24 19:16:01,594 - handle_hardware_report - INFO - Got attestation report successfully!
 ```
+
+### 4. Reading TCB Version
+The output in the above step displays the different TCB versions in HEX format (Big Endian) as well as in a human-readable format.
+
+#### Breakdown Example
+```
+Current TCB: DB16000000000004
+  Microcode:   219
+  SNP:         22
+  TEE:         0
+  Boot Loader: 4
+```
+
+#### Different TCB versions from Logs
+The logs provide various TCB versions, each representing a different state of the Trusted Computing Base. Below is an example of how these versions are logged:
+- **Current TCB version**: The TCB version currently in use.
+- **Reported TCB version**: The TCB version reported by the attestation report.
+- **Committed TCB version**: The TCB version that has been committed.
+- **Launched TCB version**: The TCB version at the time of the VM launch.
+
+These versions help in understanding the security posture and the integrity of the virtual machine environment.
+```
+2025-01-24 19:16:01,485 - log_snp_report - INFO - Current TCB version: DB16000000000004
+2025-01-24 19:16:01,485 - log_snp_report - INFO - Reported TCB version: D315000000000004
+2025-01-24 19:16:01,485 - log_snp_report - INFO - Committed TCB version: D515000000000004
+2025-01-24 19:16:01,485 - log_snp_report - INFO - Launched TCB version: D515000000000004
+```
+> By comparing these versions, we can verify that the TCB of the machine running the CVM aligns with AMD's released versions.
