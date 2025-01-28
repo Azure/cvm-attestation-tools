@@ -52,21 +52,28 @@ def attest(c, t):
   # create a new console logger
   logger = Logger('logger').get_logger()
   logger.info("Attestation started...")
-  logger.info(c)
+  logger.info(f"Reading config file: {c}")
 
   attestation_type = t
   file_path = 'report.bin'
 
   # creates an attestation parameters based on user's config
   config_json = parse_config_file(c)
-  provider_tag = config_json['attestation_provider']
-  endpoint = config_json['attestation_url']
-  api_key = config_json['api_key']
+  provider_tag = config_json.get('attestation_provider', None)
+  endpoint = config_json.get('attestation_url', None)
+  api_key = config_json.get('api_key', None)
+  claims = config_json.get('claims', None)
+
+  logger.info("Attestation tool configuration:")
+  logger.info(f"provider_tag: {provider_tag}")
+  logger.info(f"endpoint: {endpoint}")
+  logger.info(f"api_key: {api_key}")
+  logger.info(f"claims: {claims}")
 
   # Build attestation client parameters
   isolation_type = IsolationTypeLookup.get(provider_tag, IsolationTypeLookup['default'])
   provider = AttestationProviderLookup.get(provider_tag, AttestationProviderLookup['default'])
-  client_parameters = AttestationClientParameters(endpoint, provider, isolation_type, api_key) 
+  client_parameters = AttestationClientParameters(endpoint, provider, isolation_type, claims, api_key)
 
   # Attest based on user configuration
   attestation_client = AttestationClient(logger, client_parameters)

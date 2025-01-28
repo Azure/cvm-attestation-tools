@@ -235,11 +235,18 @@ class AttestationClient():
 
         tss_wrapper = TssWrapper(self.log)
         isolation_type = self.parameters.isolation_type
+
         # Extract Hardware Report and Runtime Data
         hcl_report = tss_wrapper.get_hcl_report(self.parameters.user_claims)
         report_type = ReportParser.extract_report_type(hcl_report)
         runtime_data = ReportParser.extract_runtimes_data(hcl_report)
         hw_report = ReportParser.extract_hw_report(hcl_report)
+
+        # save runtime data to a file
+        json_data = json.loads(runtime_data)
+        with open('runtime_data.json', 'w') as file:
+          json.dump(json_data, file, indent=2)
+          self.log.info(f"Output successfully written to: 'runtime_data.json'")
 
         # Set request data based on the platform
         encoded_report = Encoder.base64url_encode(hw_report)
