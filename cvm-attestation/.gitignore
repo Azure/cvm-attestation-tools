@@ -1,0 +1,3 @@
+# ignore all generated files
+runtime_data.json
+*.bin
