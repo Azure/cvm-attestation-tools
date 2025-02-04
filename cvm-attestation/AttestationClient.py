@@ -241,12 +241,7 @@ class AttestationClient():
         report_type = ReportParser.extract_report_type(hcl_report)
         runtime_data = ReportParser.extract_runtimes_data(hcl_report)
         hw_report = ReportParser.extract_hw_report(hcl_report)
-
-        # save runtime data to a file
-        json_data = json.loads(runtime_data)
-        with open('runtime_data.json', 'w') as file:
-          json.dump(json_data, file, indent=2)
-          self.log.info(f"Output successfully written to: 'runtime_data.json'")
+        self.save_runtime_data(runtime_data)
 
         # Set request data based on the platform
         encoded_report = Encoder.base64url_encode(hw_report)
@@ -318,6 +313,8 @@ class AttestationClient():
       hcl_report = tss_wrapper.get_hcl_report(self.parameters.user_claims)
       report_type = ReportParser.extract_report_type(hcl_report)
       hw_report = ReportParser.extract_hw_report(hcl_report)
+      runtime_data = ReportParser.extract_runtimes_data(hcl_report)
+      self.save_runtime_data(runtime_data)
 
       if report_type == 'snp' and isolation_type == IsolationType.SEV_SNP:
         self.log_snp_report(hw_report)
@@ -327,6 +324,16 @@ class AttestationClient():
       return hw_report
     except Exception as e:
       self.log.error(f"Error while reading hardware report. Exception {e}")
+
+
+  def save_runtime_data(self, runtime_data):
+    """
+    Save runtime data to a file.
+    """
+    json_data = json.loads(runtime_data)
+    with open('runtime_data.json', 'w') as file:
+      json.dump(json_data, file, indent=2)
+      self.log.info(f"Output successfully written to: 'runtime_data.json'")
 
 
   def log_snp_report(self, hw_report):
