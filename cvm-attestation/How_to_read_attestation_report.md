@@ -119,14 +119,14 @@ Installation completed successfully.
 ### _Windows_
 To retrieve the attestation report, run the following command:
   ```powershell
-  .\read_report.ps1
+  read_report
   ```
   > **NOTE:** Ensure you run PowerShell as an administrator because the tool requires elevated privileges to access the Virtual TPM.
 
 ### _Linux_
 To retrieve the attestation report, run the following command:
   ```bash
-  sudo ./read_report.sh
+  sudo read_report
   ```
   > **NOTE:** We use `sudo` to run the script with root privileges because the tool requires elevated permissions to access the Virtual TPM.
 
