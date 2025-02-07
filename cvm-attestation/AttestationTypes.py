@@ -28,7 +28,6 @@ class TpmInfo:
     self.key = key
 
   def get_values(self):
-    print(base64_encode(self.key.encryptionKey))
     tpm_info = {
       "AikCert": base64_encode(self.aik_cert),
       "AikPub": base64_encode(self.aik_pub),
