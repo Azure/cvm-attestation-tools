@@ -3,6 +3,7 @@
 
 import json
 import click
+import hashlib
 from AttestationClient import AttestationClient, AttestationClientParameters, Verifier
 from src.Isolation import IsolationType
 from src.Logger import Logger
@@ -48,34 +49,41 @@ class AttestException(Exception):
   default='Platform',
   help='Attestation type: Guest or Platform (Default)'
 )
-def attest(c, t):
+@click.option('--s', is_flag=True, help="Save hardware evidence to files.")
+def attest(c, t, s):
   # create a new console logger
   logger = Logger('logger').get_logger()
   logger.info("Attestation started...")
-  logger.info(c)
+  logger.info(f"Reading config file: {c}")
 
   attestation_type = t
   file_path = 'report.bin'
 
   # creates an attestation parameters based on user's config
   config_json = parse_config_file(c)
-  provider_tag = config_json['attestation_provider']
-  endpoint = config_json['attestation_url']
-  api_key = config_json['api_key']
+  provider_tag = config_json.get('attestation_provider', None)
+  endpoint = config_json.get('attestation_url', None)
+  api_key = config_json.get('api_key', None)
+  claims = config_json.get('claims', None)
+
+  logger.info("Attestation tool configuration:")
+  logger.info(f"provider_tag: {provider_tag}")
+  logger.info(f"endpoint: {endpoint}")
+  logger.info(f"api_key: {api_key}")
+  logger.info(f"claims: {claims}")
+
+  # Log SHA512 of user provided claims
+  hash_object = hashlib.sha512(json.dumps(claims).encode('utf-8'))
+  hex_dig = hash_object.hexdigest()
+  logger.info(f"SHA512 of user provided claims: {hex_dig.upper()}")
 
   # Build attestation client parameters
   isolation_type = IsolationTypeLookup.get(provider_tag, IsolationTypeLookup['default'])
   provider = AttestationProviderLookup.get(provider_tag, AttestationProviderLookup['default'])
-  client_parameters = AttestationClientParameters(endpoint, provider, isolation_type, api_key) 
+  client_parameters = AttestationClientParameters(endpoint, provider, isolation_type, claims, api_key)
 
   # Attest based on user configuration
   attestation_client = AttestationClient(logger, client_parameters)
-  hw_report = attestation_client.get_hardware_report()
-
-  # Store hardware report
-  with open(file_path, 'wb') as file:
-    file.write(hw_report)
-  logger.info(f"Output successfully written to: {file_path}")
 
   parsed_endpoint = urlparse(endpoint)
   if not parsed_endpoint.scheme or not parsed_endpoint.netloc:
@@ -91,6 +99,24 @@ def attest(c, t):
     token = attestation_client.attest_platform()
   else:
     raise AttestException('Invalid parameter for attestation type')
+
+  # Store hardware report and runtime data to files if the save flag is specified
+  if s:
+    # get the hardware evidence obtained by the attstation client
+    hardware_evidence = attestation_client.get_hardware_evidence()
+    hardware_report = hardware_evidence.hardware_report
+    runtime_data = hardware_evidence.runtime_data
+
+    # Store hardware report
+    with open(file_path, 'wb') as file:
+      file.write(hardware_report)
+    logger.info(f"Output successfully written to: {file_path}")
+
+    # Stores the runtime data in a json file
+    json_data = json.loads(runtime_data)
+    with open('runtime_data.json', 'w') as file:
+      json.dump(json_data, file, indent=2)
+      logger.info(f"Output successfully written to: 'runtime_data.json'")
 
 
 if __name__ == "__main__":

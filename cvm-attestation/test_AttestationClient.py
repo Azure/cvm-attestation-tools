@@ -1,113 +1,160 @@
 import pytest
 from unittest.mock import MagicMock, patch
-from AttestationClient import AttestationClient, Logger, AttestationClientParameters, IsolationType, Verifier
+from AttestationClient import HardwareEvidence, TssWrapper
+from AttestationClient import AttestationClient, AttestationClientParameters, IsolationType, Verifier
 from src.AttestationProvider import *
 from AttestationTypes import EphemeralKey
 from pytest_mock import mocker
 
-RESPONSE_JSON = {}
 
-
-# Fixture to create an AttestationClient instance
 @pytest.fixture
 def attestation_client(mocker):
-    logger = MagicMock()
-    mocker.patch.object(logger, 'info')
-    mocker.patch.object(logger, 'error')
+  # Mock the log object
+  log_mock = mocker.Mock()
 
-    parameters = AttestationClientParameters(
-        endpoint='http://someendpoint.com/api',
-        verifier=Verifier.MAA,
-        isolation_type=IsolationType.TDX,
-        claims='user_claims')
-    return AttestationClient(logger, parameters)
+  # Mock the parameters
+  parameters_mock = mocker.Mock()
+  parameters_mock.user_claims = "mock_user_claims"
+  parameters_mock.isolation_type = IsolationType.SEV_SNP
 
-@pytest.mark.skip()
-# Test for attest_platform method with TDX isolation type
-def test_attest_platform_tdx(attestation_client):
-  # Update the parameters to TDX isolation type
+  # Create an instance of AttestationClient with mocked log and parameters
+  return AttestationClient(logger=log_mock, parameters=parameters_mock)
+
+
+@patch('AttestationClient.TssWrapper')
+@patch('AttestationClient.ReportParser')
+@patch('AttestationClient.Encoder')
+@patch('AttestationClient.ImdsClient')
+@patch('AttestationClient.MAAProvider')
+def test_attest_platform_success_snp(
+  mock_imds_client,
+  mock_encoder,
+  mock_report_parser,
+  mock_tss_wrapper,
+  mock_attestation_provider,
+  attestation_client):
+
+  # Mock methods in TssWrapper and ReportParser
+  tss_wrapper_instance = mock_tss_wrapper.return_value
+  tss_wrapper_instance.get_hcl_report.return_value = "mock_hcl_report"
+  mock_report_parser.extract_report_type.return_value = "snp"
+  mock_report_parser.extract_hw_report.return_value = b"mock_hw_report"
+  mock_report_parser.extract_runtimes_data.return_value = b"mock_runtime_data"
+  
+  # Mock Encoder methods
+  mock_encoder.base64url_encode.side_effect = lambda x: f"encoded_{x.decode()}" if isinstance(x, bytes) else f"encoded_{x}"
+
+  # Mock ImdsClient methods
+  imds_client_instance = mock_imds_client.return_value
+  imds_client_instance.get_vcek_certificate.return_value = b"mock_vcek_cert_chain"
+  
+  # Mock attestation provider methods
+  mock_attestation_provider_instance = mock_attestation_provider.return_value
+  mock_attestation_provider_instance.attest_platform.return_value = "mock_token"
+  attestation_client.provider = mock_attestation_provider_instance
+
+  encoded_token = attestation_client.attest_platform()
+
+  assert encoded_token == "mock_token"
+  attestation_client.log.info.assert_any_call('Attesting Platform Evidence...')
+  attestation_client.log.info.assert_any_call('TOKEN:')
+  attestation_client.log.info.assert_any_call("mock_token")
+
+
+@patch('AttestationClient.TssWrapper')
+@patch('AttestationClient.ReportParser')
+@patch('AttestationClient.Encoder')
+@patch('AttestationClient.ImdsClient')
+@patch('AttestationClient.MAAProvider')
+def test_attest_platform_success_tdx(
+  mock_imds_client,
+  mock_encoder,
+  mock_report_parser,
+  mock_tss_wrapper,
+  mock_attestation_provider,
+  attestation_client):
+
   attestation_client.parameters.isolation_type = IsolationType.TDX
 
-  # Mock the external functions and methods called within attest_platform
-  with patch('tpm_wrapper.TssWrapper.get_hcl_report', return_value='hcl_report'), \
-       patch('src.ReportParser.ReportParser.extract_report_type', return_value='tdx'), \
-       patch('src.ReportParser.ReportParser.extract_runtimes_data', return_value='runtime_data'), \
-       patch('src.ReportParser.ReportParser.extract_hw_report', return_value='hw_report'), \
-       patch('src.Encoder.Encoder.base64url_encode', side_effect=lambda x: f'encoded_{x}'), \
-       patch('src.ImdsClient.ImdsClient.get_td_quote', return_value='td_quote'), \
-       patch('src.AttestationProvider.MAAProvider.attest_platform', return_value='encoded_token'):
+  # Mock methods in TssWrapper and ReportParser
+  tss_wrapper_instance = mock_tss_wrapper.return_value
+  tss_wrapper_instance.get_hcl_report.return_value = "mock_hcl_report"
+  mock_report_parser.extract_report_type.return_value = "tdx"
+  mock_report_parser.extract_hw_report.return_value = b"mock_hw_report"
+  mock_report_parser.extract_runtimes_data.return_value = b"mock_runtime_data"
+  
+  # Mock Encoder methods
+  mock_encoder.base64url_encode.side_effect = lambda x: f"encoded_{x.decode()}" if isinstance(x, bytes) else f"encoded_{x}"
 
-    token = attestation_client.attest_platform()
-    assert token == 'encoded_token'
+  # Mock ImdsClient methods
+  imds_client_instance = mock_imds_client.return_value
+  imds_client_instance.get_td_quote.return_value = b"mock_td_quote"
+  
+  # Mock attestation provider methods
+  mock_attestation_provider_instance = mock_attestation_provider.return_value
+  mock_attestation_provider_instance.attest_platform.return_value = "mock_token"
+  attestation_client.provider = mock_attestation_provider_instance
 
-@pytest.mark.skip()
-def test_attest_platform_sev_snp(attestation_client):
-  # Update the parameters to SEV_SNP isolation type
-  attestation_client.parameters.isolation_type = IsolationType.SEV_SNP
+  encoded_token = attestation_client.attest_platform()
 
-  # Mock the external functions and methods called within attest_platform
-  with patch('tpm_wrapper.TssWrapper.get_hcl_report', return_value='hcl_report'), \
-       patch('src.ReportParser.ReportParser.extract_report_type', return_value='snp'), \
-       patch('src.ReportParser.ReportParser.extract_runtimes_data', return_value='runtime_data'), \
-       patch('src.ReportParser.ReportParser.extract_hw_report', return_value='hw_report'), \
-       patch('src.Encoder.Encoder.base64url_encode', side_effect=lambda x: f'encoded_{x}'), \
-       patch('src.ImdsClient.ImdsClient.get_vcek_certificate', return_value='cert_chain'), \
-       patch('AttestationClient.json.dumps', return_value='some_string'), \
-       patch('src.Encoder.Encoder.base64url_encode', side_effect=lambda x: f'encoded_{x}'), \
-       patch('src.AttestationProvider.MAAProvider.attest_platform', return_value='encoded_token'):
+  assert encoded_token == "mock_token"
+  attestation_client.log.info.assert_any_call('Attesting Platform Evidence...')
+  attestation_client.log.info.assert_any_call('TOKEN:')
+  attestation_client.log.info.assert_any_call("mock_token")
 
-    token = attestation_client.attest_platform()
-    assert token == 'encoded_token'
 
-# def test_attest_guest_sev_snp(attestation_client, mocker):
-#   ephemeral_key_mock = EphemeralKey(bytes(), bytes(), bytes())
-#   pcr_quote_mock = (bytes(), bytes())
-#   response_mock = {
-#     'EncryptedInnerKey': 'key',
-#     'AuthenticationData': 'auth',
-#     'EncryptionParams': {
-#       'Iv': 'iv',
+@patch('AttestationClient.TssWrapper')
+@patch('AttestationClient.ReportParser')
+@patch.object(AttestationClient, 'log_snp_report')
+def test_get_hardware_evidence_success(
+  mock_log_snp_report,
+  mock_report_parser,
+  mock_tss_wrapper,
+  attestation_client):
 
-#     },
-#     'Jwt': 'dummy_encrypted_token'
-#   }
-#   aesgcm = MagicMock()
-#   mocker.patch.object(aesgcm, 'decrypt')
-# #   mocker.patch.object(aesgcm, 'error')
+  # Mock log_snp_report
+  mock_log_snp_report.return_value = None
 
-#   # Update the parameters to SEV_SNP isolation type
-#   attestation_client.parameters.isolation_type = IsolationType.SEV_SNP
-#   with patch.multiple('AttestationClient',
-#     get_hcl_report=MagicMock(return_value='hcl_report'),
-#     get_aik_cert=MagicMock(return_value=bytes('aik_cert', 'utf-8')),
-#     get_aik_pub=MagicMock(return_value=bytes('aik_pub', 'utf-8')),
-#     get_pcr_quote=MagicMock(return_value=pcr_quote_mock),
-#     get_pcr_values=MagicMock(return_value=bytes('pcr_val', 'utf-8')),
-#     # ... include other patches here
-#     ):
+  # Mock methods in TssWrapper and ReportParser
+  tss_wrapper_instance = mock_tss_wrapper.return_value
+  tss_wrapper_instance.get_hcl_report.return_value = "mock_hcl_report"
+  mock_report_parser.extract_report_type.return_value = "snp"
+  mock_report_parser.extract_hw_report.return_value = b"mock_hw_report"
+  mock_report_parser.extract_runtimes_data.return_value = b"mock_runtime_data"
 
-# #   # Mock the external functions and methods called within attest_guest
-# #   with patch('AttestationClient.get_hcl_report', return_value='hcl_report'), \
-# #        patch('AttestationClient.get_aik_cert', return_value=bytes('aik_cert', 'utf-8')), \
-# #        patch('AttestationClient.get_aik_pub', return_value=bytes('aik_pub', 'utf-8')), \
-# #        patch('AttestationClient.get_pcr_quote', return_value=pcr_quote_mock), \
-# #        patch('AttestationClient.get_pcr_values', return_value='pcr_values'), \
-# #        patch('AttestationClient.get_ephemeral_key', return_value=ephemeral_key_mock), \
-# #        patch('AttestationClient.get_measurements', return_value=bytes('tcg_logs', 'utf-8')), \
-# #        patch('AttestationTypes.TpmInfo.get_values', return_value=bytes()), \
-# #        patch('src.ReportParser.ReportParser.extract_report_type', return_value='snp'), \
-# #        patch('src.ReportParser.ReportParser.extract_runtimes_data', return_value=bytes()), \
-# #        patch('src.ReportParser.ReportParser.extract_hw_report', return_value='hw_report'), \
-# #        patch('src.Encoder.Encoder.base64url_encode', side_effect=lambda x: f'encoded_{x}'), \
-# #        patch('src.ImdsClient.ImdsClient.get_vcek_certificate', return_value=bytes()), \
-# #        patch('AttestationClient.json.dumps', return_value='some_string'), \
-# #        patch('src.Encoder.Encoder.base64url_encode', side_effect=lambda x: f'encoded_{x}'), \
-# #        patch('src.AttestationProvider.MAAProvider.attest_guest', return_value='encoded_token'), \
-# #        patch('AttestationClient.urlsafe_b64decode', return_value=bytes('decoded_response', 'utf-8')), \
-# #        patch('src.Encoder.Encoder.base64decode', side_effect=lambda x: f'decoded_{x}'), \
-# #        patch('AttestationClient.json.loads', return_value=response_mock), \
-# #        patch('AttestationClient.decrypt_with_ephemeral_key', return_value='decrypted'), \
-# #        patch('AttestationClient.AESGCM.decrypt', return_value=aesgcm):
+  evidence = attestation_client.get_hardware_evidence()
+  assert isinstance(evidence, HardwareEvidence)
+  assert evidence.hardware_report == b"mock_hw_report"
+  assert evidence.runtime_data == b"mock_runtime_data"
+  attestation_client.log.info.assert_called_with('Collecting hardware evidence...')
 
-#     token = attestation_client.attest_guest()
-#     assert token == 'encoded_token'
+
+@patch('AttestationClient.TssWrapper')
+@patch('AttestationClient.ReportParser')
+def test_get_hardware_evidence_tdx_not_supported(mock_report_parser, mock_tss_wrapper, attestation_client):
+  # Set isolation type to TDX
+  attestation_client.parameters.isolation_type = IsolationType.TDX
+
+  # Mock methods in TssWrapper and ReportParser
+  tss_wrapper_instance = mock_tss_wrapper.return_value
+  tss_wrapper_instance.get_hcl_report.return_value = "mock_hcl_report"
+  mock_report_parser.extract_report_type.return_value = "tdx"
+  mock_report_parser.extract_hw_report.return_value = b"mock_hw_report"
+  mock_report_parser.extract_runtimes_data.return_value = b"mock_runtime_data"
+  
+  evidence = attestation_client.get_hardware_evidence()
+  assert isinstance(evidence, HardwareEvidence)
+  assert evidence.hardware_report == b"mock_hw_report"
+  assert evidence.runtime_data == b"mock_runtime_data"
+  attestation_client.log.info.assert_called_with('Hardware report parsing for TDX not supported yet')
+
+
+@patch('AttestationClient.TssWrapper')
+@patch('AttestationClient.ReportParser')
+def test_get_hardware_evidence_exception(mock_report_parser, mock_tss_wrapper, attestation_client):
+  # Mock TssWrapper to raise an exception
+  tss_wrapper_instance = mock_tss_wrapper.return_value
+  tss_wrapper_instance.get_hcl_report.side_effect = Exception("some_exception")
+
+  attestation_client.get_hardware_evidence()
+  attestation_client.log.error.assert_called_with("Error while reading hardware report. Exception some_exception")

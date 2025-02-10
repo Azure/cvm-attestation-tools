@@ -51,8 +51,27 @@ class GuestAttestationParameters:
     })
 
 
-class PlatformAttestationParameters:
-  def __init__(self, hardware_report, runtime_data):
+class HardwareEvidence:
+  """
+  A class to represent hardware evidence.
+
+  Attributes
+  ----------
+  hardware_report : bytes
+    The hardware report.
+  runtime_data : bytes
+    The runtime data.
+  """
+
+  def __init__(self, report_type: str, hardware_report: bytes, runtime_data: bytes):
+    if not isinstance(report_type, str):
+      raise TypeError(f"Expected bytes for report_type, got {type(report_type).__name__}")
+    if not isinstance(hardware_report, bytes):
+      raise TypeError(f"Expected bytes for hardware_report, got {type(hardware_report).__name__}")
+    if not isinstance(runtime_data, bytes):
+      raise TypeError(f"Expected bytes for runtime_data, got {type(runtime_data).__name__}")
+
+    self.type = report_type
     self.hardware_report = hardware_report
     self.runtime_data = runtime_data
 
@@ -80,6 +99,10 @@ class AttestationClientParameters:
     self.user_claims = claims
 
 
+class UnsupportedReportTypeException(Exception):
+  pass
+
+
 class AttestationClient():
   def __init__(self, logger: Logger, parameters: AttestationClientParameters):
     verifier = parameters.verifier
@@ -91,6 +114,38 @@ class AttestationClient():
     self.log = logger
 
     self.provider = MAAProvider(logger,isolation_type,endpoint) if verifier == Verifier.MAA else ITAProvider(logger,isolation_type,endpoint, api_key) if verifier == Verifier.ITA else None
+
+  def get_hardware_evidence(self) -> HardwareEvidence:
+    """
+    Returns an instance of the HardwareEvidence class.
+
+    Returns
+    -------
+    HardwareEvidence
+      The current instance of the HardwareEvidence class.
+    """
+
+    try:
+      self.log.info('Collecting hardware evidence...')
+
+      # Extract Hardware Report and Runtime Data
+      tss_wrapper = TssWrapper(self.log)
+      hcl_report = tss_wrapper.get_hcl_report(self.parameters.user_claims)
+      report_type = ReportParser.extract_report_type(hcl_report)
+      hw_report = ReportParser.extract_hw_report(hcl_report)
+      runtime_data = ReportParser.extract_runtimes_data(hcl_report)
+
+      isolation_type = self.parameters.isolation_type
+      if report_type == 'snp' and isolation_type == IsolationType.SEV_SNP:
+        self.log_snp_report(hw_report)
+      elif report_type == 'tdx' and isolation_type == IsolationType.TDX:
+        self.log.info("Hardware report parsing for TDX not supported yet")
+      else:
+        raise UnsupportedReportTypeException(f"Unsupported report type: {report_type}")
+
+      return HardwareEvidence(report_type, hw_report, runtime_data)
+    except Exception as e:
+      self.log.error(f"Error while reading hardware report. Exception {e}")
 
   def attest_guest(self):
     """
@@ -105,22 +160,20 @@ class AttestationClient():
       try:
         self.log.info('Attesting Guest Evidence...')
 
-        tss_wrapper = TssWrapper(self.log)
-        imds_client = ImdsClient(self.log)
-        # Extract Hardware Report and Runtime Data
-        hcl_report = tss_wrapper.get_hcl_report(self.parameters.user_claims)
-        report_type = ReportParser.extract_report_type(hcl_report)
-        runtime_data = ReportParser.extract_runtimes_data(hcl_report)
-        hw_report = ReportParser.extract_hw_report(hcl_report)
+        hardware_evidence = self.get_hardware_evidence()
+        hw_report = hardware_evidence.hardware_report
+        runtime_data = hardware_evidence.runtime_data
+
 
         # Logs important SNP fields from the hardware report
         self.log_snp_report(hw_report)
 
+        imds_client = ImdsClient(self.log)
         cert_chain = imds_client.get_vcek_certificate()
 
         # Collect guest attestation parameters
         os_info = OsInfo()
-        print(os_info.pcr_list)
+        tss_wrapper = TssWrapper(self.log)
         aik_cert = tss_wrapper.get_aik_cert()
         aik_pub = tss_wrapper.get_aik_pub()
         pcr_quote, sig = tss_wrapper.get_pcr_quote(os_info.pcr_list)
@@ -298,28 +351,6 @@ class AttestationClient():
           self.log.error(
             f"Request failed after all retries have been exhausted. Error: {e}"
           )
-
-
-  def get_hardware_report(self):
-    try:
-      self.log.info('Parsing hardware report...')
-
-      isolation_type = self.parameters.isolation_type
-
-      tss_wrapper = TssWrapper(self.log)
-      # Extract Hardware Report and Runtime Data
-      hcl_report = tss_wrapper.get_hcl_report(self.parameters.user_claims)
-      report_type = ReportParser.extract_report_type(hcl_report)
-      hw_report = ReportParser.extract_hw_report(hcl_report)
-
-      if report_type == 'snp' and isolation_type == IsolationType.SEV_SNP:
-        self.log_snp_report(hw_report)
-      else:
-        self.log.error("Hardware report not supported")
-
-      return hw_report
-    except Exception as e:
-      self.log.error(f"Error while reading hardware report. Exception {e}")
 
 
   def log_snp_report(self, hw_report):

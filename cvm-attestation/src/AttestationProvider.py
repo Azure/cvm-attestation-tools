@@ -208,6 +208,8 @@ class MAAProvider(IAttestationProvider):
         self.log.info(f"SNP Microcode SVN: {claims['x-ms-sevsnpvm-microcode-svn']}")
         self.log.info(f"SNP Firmware SVN: {claims['x-ms-sevsnpvm-snpfw-svn']}")
         self.log.info(f"SNP TEE SVN: {claims['x-ms-sevsnpvm-tee-svn']}")
+        self.log.info(f"Report Data: {claims['x-ms-sevsnpvm-reportdata']}")
+        self.log.info(f"User Claims Digest: {claims['x-ms-runtime']['user-data']}")
         self.log.info("Attested Platform Successfully!!")
     except Exception as e:
       raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
@@ -234,6 +236,8 @@ class MAAProvider(IAttestationProvider):
         self.log.info(f"TCB Status: {claims['attester_tcb_status']}")
         self.log.info(f"TCB SVN : {claims['tdx_tee_tcb_svn']}")
         self.log.info(f"TPM Persisted: {claims['x-ms-runtime']['vm-configuration']['tpm-persisted']}")
+        self.log.info(f"Report Data: {claims['x-ms-reportdata']}")
+        self.log.info(f"User Claims Digest: {claims['x-ms-runtime']['user-data']}")
         self.log.info("Attested Platform Successfully!!")
     except Exception as e:
       raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
@@ -252,6 +256,8 @@ class MAAProvider(IAttestationProvider):
         self.log.info(f"SNP Microcode SVN: {claims['x-ms-isolation-tee']['x-ms-sevsnpvm-microcode-svn']}")
         self.log.info(f"SNP Firmware SVN: {claims['x-ms-isolation-tee']['x-ms-sevsnpvm-snpfw-svn']}")
         self.log.info(f"SNP TEE SVN: {claims['x-ms-isolation-tee']['x-ms-sevsnpvm-tee-svn']}")
+        self.log.info(f"Report Data: {claims['x-ms-isolation-tee']['x-ms-sevsnpvm-reportdata']}")
+        self.log.info(f"User Claims Digest: {claims['x-ms-isolation-tee']['x-ms-runtime']['user-data']}")
         self.log.info("Attested Guest Successfully!!")
     except Exception as e:
       raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
