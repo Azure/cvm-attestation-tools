@@ -236,7 +236,7 @@ class MAAProvider(IAttestationProvider):
         self.log.info(f"TCB Status: {claims['attester_tcb_status']}")
         self.log.info(f"TCB SVN : {claims['tdx_tee_tcb_svn']}")
         self.log.info(f"TPM Persisted: {claims['x-ms-runtime']['vm-configuration']['tpm-persisted']}")
-        self.log.info(f"Report Data: {claims['x-ms-reportdata']}")
+        self.log.info(f"Report Data: {claims['tdx_report_data']}")
         self.log.info(f"User Claims Digest: {claims['x-ms-runtime']['user-data']}")
         self.log.info("Attested Platform Successfully!!")
     except Exception as e:
