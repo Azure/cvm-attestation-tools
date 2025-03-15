@@ -6,6 +6,7 @@
 import json
 import time
 from enum import Enum
+from base64 import urlsafe_b64decode
 from src.OsInfo import OsInfo
 from src.Isolation import IsolationType, Isolation, TdxEvidence, SnpEvidence
 from src.Logger import Logger
@@ -14,7 +15,7 @@ from src.ImdsClient import ImdsClient
 from src.AttestationProvider import MAAProvider, ITAProvider
 from AttestationTypes import TpmInfo
 from src.measurements import get_measurements
-from src.Encoder import Encoder, urlsafe_b64decode
+from src.Encoder import Encoder
 from tpm_wrapper import TssWrapper
 from requests.exceptions import RequestException
 
@@ -171,8 +172,8 @@ class AttestationClient():
         if report_type == 'tdx':
           encoded_report = Encoder.base64url_encode(hw_report)
           encoded_hw_evidence = imds_client.get_td_quote(encoded_report)
-
-          hw_evidence = TdxEvidence(encoded_hw_evidence, runtime_data)
+          td_quote = Encoder.base64url_decode(encoded_hw_evidence)
+          hw_evidence = TdxEvidence(td_quote, runtime_data)
         elif report_type == 'snp':
           cert_chain = imds_client.get_vcek_certificate()
           hw_evidence = SnpEvidence(hw_report, runtime_data, cert_chain)

@@ -6,10 +6,10 @@
 import json
 from enum import Enum
 import tpm_wrapper
-from base64 import urlsafe_b64encode
+from base64 import urlsafe_b64encode, b64encode
 
-def base64url_encode(data):
-  return str(urlsafe_b64encode(data).rstrip(b'='), "utf-8")
+def base64_encode(data):
+  return str(b64encode(data), "utf-8")
 
 
 class IsolationType(Enum):
@@ -39,18 +39,18 @@ class SnpEvidence(Evidence):
 
   def get_evidence(self):
     hardware_evidence = {
-      'SnpReport': base64url_encode(self.snp_report),
-      'VcekCertChain': base64url_encode(self.vcek_cert)
+      'SnpReport': base64_encode(self.snp_report),
+      'VcekCertChain': base64_encode(self.vcek_cert)
     }
     hardware_evidence = json.dumps(hardware_evidence)
     hardware_evidence = bytearray(hardware_evidence.encode('utf-8'))
-    encoded_hw_evidence = base64url_encode(hardware_evidence)
+    encoded_hw_evidence = base64_encode(hardware_evidence)
 
     return {
       "Type": "SevSnp",
       "Evidence": {
         "Proof": encoded_hw_evidence,
-        "RunTimeData": base64url_encode(self.runtime_data),
+        "RunTimeData": base64_encode(self.runtime_data),
       }
     }
 
@@ -60,6 +60,8 @@ class TdxEvidence(Evidence):
     self.encoded_hw_evidence = encoded_hw_evidence
     self.runtime_data = runtime_data
 
+    print(self.encoded_hw_evidence)
+
   def validate(self):
     # Add validation logic
     pass
@@ -68,8 +70,8 @@ class TdxEvidence(Evidence):
     return {
       "Type": "Tdx",
       "Evidence": {
-        "Proof": self.encoded_hw_evidence,
-        "RunTimeData": base64url_encode(self.runtime_data),
+        "Proof": base64_encode(self.encoded_hw_evidence),
+        "RunTimeData": base64_encode(self.runtime_data),
       }
     }
 
