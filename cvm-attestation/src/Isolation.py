@@ -6,10 +6,11 @@
 import json
 from enum import Enum
 import tpm_wrapper
-from base64 import urlsafe_b64encode, b64encode
+# from base64 import b64encode
+from src.Encoder import Encoder
 
-def base64_encode(data):
-  return str(b64encode(data), "utf-8")
+# def Encoder.base64_encode(data):
+#   return str(b64encode(data), "utf-8")
 
 
 class IsolationType(Enum):
@@ -39,18 +40,18 @@ class SnpEvidence(Evidence):
 
   def get_evidence(self):
     hardware_evidence = {
-      'SnpReport': base64_encode(self.snp_report),
-      'VcekCertChain': base64_encode(self.vcek_cert)
+      'SnpReport': Encoder.base64url_encode(self.snp_report),
+      'VcekCertChain': Encoder.base64url_encode(self.vcek_cert)
     }
     hardware_evidence = json.dumps(hardware_evidence)
     hardware_evidence = bytearray(hardware_evidence.encode('utf-8'))
-    encoded_hw_evidence = base64_encode(hardware_evidence)
+    encoded_hw_evidence = Encoder.base64url_encode(hardware_evidence)
 
     return {
       "Type": "SevSnp",
       "Evidence": {
         "Proof": encoded_hw_evidence,
-        "RunTimeData": base64_encode(self.runtime_data),
+        "RunTimeData": Encoder.base64url_encode(self.runtime_data),
       }
     }
 
@@ -70,8 +71,8 @@ class TdxEvidence(Evidence):
     return {
       "Type": "Tdx",
       "Evidence": {
-        "Proof": base64_encode(self.encoded_hw_evidence),
-        "RunTimeData": base64_encode(self.runtime_data),
+        "Proof": Encoder.base64_encode(self.encoded_hw_evidence),
+        "RunTimeData": Encoder.base64_encode(self.runtime_data),
       }
     }
 

@@ -39,7 +39,7 @@ class Encoder:
     return base64url_bytes.decode('utf-8').rstrip('=')
 
   @staticmethod
-  def base64encode(data):
+  def base64_encode(data):
     """
     Encode data bytes to base64
 
@@ -49,9 +49,7 @@ class Encoder:
     Returns:
     str: The base64 encoded string.
     """
-  
-    base64_bytes = b64encode(data)
-    return base64_bytes.decode('utf-8')
+    return str(b64encode(data), "utf-8")
   
   @staticmethod
   def base64_encode_string(data):
