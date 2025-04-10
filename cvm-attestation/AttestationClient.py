@@ -45,7 +45,7 @@ class GuestAttestationParameters:
       'OSVersionMajor': str(self.os_info.major_version),
       'OSVersionMinor': str(self.os_info.minor_version),
       'OSBuild': Encoder.base64_encode_string(self.os_info.build),
-      'TcgLogs': Encoder.base64encode(self.tcg_logs),
+      'TcgLogs': Encoder.base64_encode(self.tcg_logs),
       'ClientPayload': Encoder.base64_encode_string(""),
       'TpmInfo': self.tpm_info.get_values(),
       'IsolationInfo': self.isolation.get_values()
