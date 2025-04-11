@@ -150,6 +150,7 @@ class MAAProvider(IAttestationProvider):
           data=json.dumps(evidence),
           headers=DEFAULT_HEADERS
         )
+        self.log.info(response.headers)
 
         # Check the response from the server
         if response.status_code == 200:
@@ -244,6 +245,16 @@ class MAAProvider(IAttestationProvider):
 
 
   def print_guest_claims(self, encoded_token):
+    if self.isolation == IsolationType.TDX:
+      self.print_tdx_guest_claims(encoded_token)
+    elif self.isolation == IsolationType.SEV_SNP:
+      self.print_snp_guest_claims(encoded_token)
+    else:
+      raise ValueError(
+        f"Invalid Isolation Type. Valid Types: {IsolationType.TDX}, {IsolationType.SEV_SNP}"
+      )
+
+  def print_snp_guest_claims(self, encoded_token):
     try:
       claims = jwt.decode(encoded_token, options={"verify_signature": False})
 
@@ -261,7 +272,25 @@ class MAAProvider(IAttestationProvider):
         self.log.info("Attested Guest Successfully!!")
     except Exception as e:
       raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
+    
+  def print_tdx_guest_claims(self, encoded_token):
+    try:
+      claims = jwt.decode(encoded_token, options={"verify_signature": False})
 
+      if claims['x-ms-isolation-tee']['x-ms-compliance-status'] == 'azure-compliant-cvm':
+        self.log.info(f"Claims:")
+        self.log.info(f"Attestation Type: {claims['x-ms-isolation-tee']['x-ms-attestation-type']}")
+        self.log.info(f"Status: {claims['x-ms-isolation-tee']['x-ms-compliance-status']}")
+        self.log.info(f"MR SEAM: {claims['x-ms-isolation-tee']['tdx_mrseam']}")
+        self.log.info(f"MR TD: {claims['x-ms-isolation-tee']['tdx_report_data']}")
+        self.log.info(f"SEAM SVN: {claims['x-ms-isolation-tee']['tdx_seamsvn']}")
+        self.log.info(f"TD Attributes: {claims['x-ms-isolation-tee']['tdx_td_attributes']}")
+        self.log.info(f"TEE TCB SVN: {claims['x-ms-isolation-tee']['tdx_tee_tcb_svn']}")
+        self.log.info(f"Report Data: {claims['x-ms-isolation-tee']['tdx_report_data']}")
+        self.log.info(f"User Claims Digest: {claims['x-ms-isolation-tee']['x-ms-runtime']['user-data']}")
+        self.log.info("Attested Guest Successfully!!")
+    except Exception as e:
+      raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
 
   def create_payload(self, evidence: str, runtimes_data: str):
     # Check if evidence and runtimes_data are strings

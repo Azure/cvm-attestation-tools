@@ -3,7 +3,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from base64 import urlsafe_b64encode, urlsafe_b64decode, b64decode, b64encode
+from base64 import urlsafe_b64encode, b64decode, b64encode
 
 class Encoder:
   @staticmethod
@@ -39,7 +39,7 @@ class Encoder:
     return base64url_bytes.decode('utf-8').rstrip('=')
 
   @staticmethod
-  def base64encode(data):
+  def base64_encode(data):
     """
     Encode data bytes to base64
 
@@ -49,9 +49,7 @@ class Encoder:
     Returns:
     str: The base64 encoded string.
     """
-  
-    base64_bytes = b64encode(data)
-    return base64_bytes.decode('utf-8')
+    return str(b64encode(data), "utf-8")
   
   @staticmethod
   def base64_encode_string(data):
@@ -84,3 +82,19 @@ class Encoder:
     data_bytes = bytes(data, 'utf-8')
     base64_bytes = b64decode(data_bytes)
     return base64_bytes
+
+  @staticmethod
+  def base64url_decode(data):
+    """
+    Decode base64url encoded data string to bytes
+
+    Parameters:
+    data (str): The base64url encoded data to be decoded.
+
+    Returns:
+    bytes: The decoded data bytes.
+    """
+    data = data.replace('-', '+').replace('_', '/')
+    padding = 4 - (len(data) % 4) if (len(data) % 4) else 0
+    data += "=" * padding
+    return b64decode(data)

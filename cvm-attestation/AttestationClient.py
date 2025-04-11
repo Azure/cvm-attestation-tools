@@ -6,15 +6,16 @@
 import json
 import time
 from enum import Enum
+from base64 import urlsafe_b64decode
 from src.OsInfo import OsInfo
-from src.Isolation import IsolationType, IsolationInfo
+from src.Isolation import IsolationType, Isolation, TdxEvidence, SnpEvidence
 from src.Logger import Logger
 from src.ReportParser import ReportParser
 from src.ImdsClient import ImdsClient
 from src.AttestationProvider import MAAProvider, ITAProvider
 from AttestationTypes import TpmInfo
 from src.measurements import get_measurements
-from src.Encoder import Encoder, urlsafe_b64decode
+from src.Encoder import Encoder
 from tpm_wrapper import TssWrapper
 from requests.exceptions import RequestException
 
@@ -44,7 +45,7 @@ class GuestAttestationParameters:
       'OSVersionMajor': str(self.os_info.major_version),
       'OSVersionMinor': str(self.os_info.minor_version),
       'OSBuild': Encoder.base64_encode_string(self.os_info.build),
-      'TcgLogs': Encoder.base64encode(self.tcg_logs),
+      'TcgLogs': Encoder.base64_encode(self.tcg_logs),
       'ClientPayload': Encoder.base64_encode_string(""),
       'TpmInfo': self.tpm_info.get_values(),
       'IsolationInfo': self.isolation.get_values()
@@ -163,13 +164,22 @@ class AttestationClient():
         hardware_evidence = self.get_hardware_evidence()
         hw_report = hardware_evidence.hardware_report
         runtime_data = hardware_evidence.runtime_data
+        report_type = hardware_evidence.type
 
-
-        # Logs important SNP fields from the hardware report
-        self.log_snp_report(hw_report)
-
+        # get the isolation information for the platform
+        hw_evidence = ""
         imds_client = ImdsClient(self.log)
-        cert_chain = imds_client.get_vcek_certificate()
+        if report_type == 'tdx':
+          encoded_report = Encoder.base64url_encode(hw_report)
+          encoded_hw_evidence = imds_client.get_td_quote(encoded_report)
+          td_quote = Encoder.base64url_decode(encoded_hw_evidence)
+          hw_evidence = TdxEvidence(td_quote, runtime_data)
+        elif report_type == 'snp':
+          cert_chain = imds_client.get_vcek_certificate()
+          hw_evidence = SnpEvidence(hw_report, runtime_data, cert_chain)
+        else:
+          self.log.info('Invalid Hardware Report Type')
+
 
         # Collect guest attestation parameters
         os_info = OsInfo()
@@ -181,7 +191,7 @@ class AttestationClient():
         key, key_handle, tpm = tss_wrapper.get_ephemeral_key(os_info.pcr_list)
         tpm_info = TpmInfo(aik_cert, aik_pub, pcr_quote, sig, pcr_values, key)
         tcg_logs = get_measurements(os_info.type)
-        isolation = IsolationInfo(self.parameters.isolation_type, hw_report, runtime_data, cert_chain)
+        isolation = Isolation(self.parameters.isolation_type, hw_evidence)
         param = GuestAttestationParameters(os_info, tcg_logs, tpm_info, isolation)
 
         # Calls attestation provider with the guest evidence
