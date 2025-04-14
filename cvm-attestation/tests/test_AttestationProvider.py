@@ -226,7 +226,7 @@ def test_attest_platform_returns_None_after_http_response_400(maa_provider, mock
   mock_response.text = 'some_failure_from_provider'
   mocker.patch('requests.post', return_value=mock_response)
 
- # Call attest platform 
+  # Call attest platform 
   evidence = 'some_base64url_encoded_evidence'
   runtimes_data = 'some_base64url_encoded_data'
   maa_provider.isolation = IsolationType.SEV_SNP
@@ -242,7 +242,6 @@ def test_attest_guest_returns_None_after_http_response_400(maa_provider, mocker)
   mock_response.text = 'some_failure_from_provider'
   mocker.patch('requests.post', return_value=mock_response)
 
- # Call attest platform 
   # Call attest guest 
   evidence = {'dummy_key': 'dummy_value'}
   maa_provider.isolation = IsolationType.SEV_SNP
@@ -250,17 +249,74 @@ def test_attest_guest_returns_None_after_http_response_400(maa_provider, mocker)
 
   assert result == None
 
-# def test_attest_platform_success(maa_provider, mocker):
-#   # Create a mock response object with passing attributes
-#   mock_response = MagicMock()
-#   mock_response.status_code = 200
-#   mock_response.text = '{"token": "encoded_token_value"}'
-#   mocker.patch('requests.post', return_value=mock_response)
 
-#   # Call attest platform 
-#   evidence = 'some_base64url_encoded_evidence'
-#   runtimes_data = 'some_base64url_encoded_data'
-#   maa_provider.isolation = IsolationType.SEV_SNP
-#   result = maa_provider.attest_platform(evidence, runtimes_data)
+def test_attest_platform_retries_with_retry_after_header_until_max_retries(maa_provider, mocker):
+  """
+  Tests if the retry logic correctly handles Retry-After header
+  and waits for the correct duration before retrying.
+  """
+  mock_response = MagicMock()
+  mock_response.status_code = 429
+  mock_response.headers = {'Retry-After': '2'}
+  mock_response.text = "Too many requests"
 
-#   assert result == 'encoded_token_value'
+  mocker.patch('requests.post', return_value=mock_response)
+
+  with patch('time.sleep', return_value=None) as mock_sleep:
+    evidence = 'some_base64url_encoded_evidence'
+    runtimes_data = 'some_base64url_encoded_data'
+    maa_provider.isolation = IsolationType.TDX
+
+    with pytest.raises(AttestationProviderException) as excinfo:
+      maa_provider.attest_platform(evidence, runtimes_data)
+
+      # Ensure function attempted the request 5 times before failing
+      assert mock_response.call_count == 5
+
+      # Ensure sleep was called correctly (5 retries = 4 sleeps)
+      mock_sleep.assert_has_calls([call(2), call(2), call(2), call(2)])
+      assert mock_sleep.call_count == 4
+
+
+def test_attest_platform_succeeds_after_retries(maa_provider, mocker):
+  """
+  Ensures that after transient failures, the request succeeds after retrying.
+  """
+  mock_responses = [
+    MagicMock(status_code=429, headers={'Retry-After': '10'}, text="Too many requests"),
+    MagicMock(status_code=429, headers={'Retry-After': '5'}, text="Too many requests"),
+    MagicMock(status_code=200, text='{"token": "encoded_token_value"}')
+  ]
+
+  mock_post = mocker.patch('requests.post', side_effect=mock_responses)
+
+  with patch('time.sleep', return_value=None) as mock_sleep:
+    evidence = 'some_base64url_encoded_evidence'
+    runtimes_data = 'some_base64url_encoded_data'
+    maa_provider.isolation = IsolationType.TDX
+    result = maa_provider.attest_platform(evidence, runtimes_data)
+
+    assert result == "encoded_token_value"
+    assert mock_post.call_count == 3  # Two failures, then success
+    mock_sleep.assert_has_calls([call(10), call(5)])  # Retries before success
+
+def test_attest_guest_succeeds_after_retries(maa_provider, mocker):
+  """
+  Ensures that after transient failures, the request succeeds after retrying.
+  """
+  mock_responses = [
+    MagicMock(status_code=429, headers={'Retry-After': '10'}, text="Too many requests"),
+    MagicMock(status_code=429, headers={'Retry-After': '5'}, text="Too many requests"),
+    MagicMock(status_code=200, text='{"token": "encoded_token_value"}')
+  ]
+
+  mock_post = mocker.patch('requests.post', side_effect=mock_responses)
+
+  with patch('time.sleep', return_value=None) as mock_sleep:
+    evidence = {'dummy_key': 'dummy_value'}
+    maa_provider.isolation = IsolationType.TDX
+    result = maa_provider.attest_guest(evidence)
+
+    assert result == "encoded_token_value"
+    assert mock_post.call_count == 3  # Two failures, then success
+    mock_sleep.assert_has_calls([call(10), call(5)])  # Retries before success

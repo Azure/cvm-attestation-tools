@@ -99,6 +99,24 @@ class MAAProvider(IAttestationProvider):
           )
 
           return None
+        elif response.status_code == 429: # Too Many Requests
+          self.log.warning(
+            f"Too many requests, error: {response.text}"
+          )
+
+          retries += 1
+          if retries < max_retries:
+            headers = response.headers
+            retry_after = headers.get('Retry-After')
+            sleep_time = int((retry_after))
+
+            if retry_after:
+              self.log.info(f"Retrying in {retry_after} seconds...")
+              time.sleep(sleep_time)
+          else:
+            raise AttestationProviderException(
+              f"Unexpected Error. Status code: {response.status_code}, error: {response.text}"
+            )
         else:
           self.log.error(
             f"Failed to verify evidence, status code: {response.status_code}, error: {response.text}"
@@ -159,6 +177,25 @@ class MAAProvider(IAttestationProvider):
           encoded_token = response_json['token']
 
           return encoded_token
+        elif response.status_code == 429: # Too Many Requests
+          self.log.warning(
+            f"Too many requests, error: {response.text}"
+          )
+
+          retries += 1
+          if retries < max_retries:
+            headers = response.headers
+            retry_after = headers.get('Retry-After')
+            sleep_time = int((retry_after))
+
+            # check if MAA has provided a retry after time in the response header
+            if retry_after:
+              self.log.info(f"Retrying in {retry_after} seconds...")
+              time.sleep(sleep_time)
+          else:
+            raise AttestationProviderException(
+              f"Unexpected status code: {response.status_code}, error: {response.text}"
+            )
         elif response.status_code == 400:
           self.log.error(
             f"Failed to verify evidence due to invalid collateral, error: {response.text}"
