@@ -18,6 +18,8 @@ IMDS_URL = "http://169.254.169.254/metadata";
 THIM_PATH = "/THIM/amd/certification";
 THIM_ENDPOINT = IMDS_URL + THIM_PATH
 
+INSTANCE = "/instance?api-version=2021-01-01&format=json"
+COMPUTE_METADATA_URL = IMDS_URL + INSTANCE
 
 class TDQuoteException(Exception):
   pass
@@ -133,3 +135,23 @@ class ImdsClient:
         print(e)
         self.log.error("JSON decode error", exc_info=True)
         raise VcekCertException(f'Error decoding JSON response. Error: {e}') from e
+
+
+  def get_region_from_compute_metadata(self):
+    """
+    Get the compute metadata from the IMDS endpoint.
+    """
+    headers = {
+      'Content-Type': 'application/json',
+      'Metadata': 'true'
+    }
+    print('Getting region from compute metadata')
+
+    response = requests.get(COMPUTE_METADATA_URL, headers=headers)
+    if response.status_code == 200:
+      metadata = response.json
+      if metadata:
+        return metadata['compute']['location']
+    else:
+      self.log.error(f"Failed to get compute metadata: {response.status_code}")
+      return None
