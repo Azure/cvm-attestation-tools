@@ -33,11 +33,17 @@ AttestationProviderLookup = {
 }
 
 
+ATTESTATION_METHODS = {
+  "guest": "attest_guest",
+  "platform": "attest_platform"
+}
+
+
 class AttestException(Exception):
   pass
 
 
-def get_base_url(logger):
+def get_endpoint(logger, isolation_type: IsolationType, attestation_type: str):
   """
   Get the base URL for the attestation endpoint based on the region.
   """
@@ -46,9 +52,8 @@ def get_base_url(logger):
   endpoint_file_path = os.path.join(current_dir, filename)
 
   endpoint_selector = EndpointSelector(endpoint_file_path, logger)
-  base_url = endpoint_selector.get_attestation_endpoint()
+  return endpoint_selector.get_attestation_endpoint(isolation_type, attestation_type)
 
-  return base_url
 
 @click.command()
 @click.option(
@@ -71,6 +76,7 @@ def attest(c, t, s):
   logger.info(f"Reading config file: {c}")
 
   attestation_type = t
+  attestation_type = attestation_type.lower()
 
   # creates an attestation parameters based on user's config
   config_json = parse_config_file(c)
@@ -84,33 +90,8 @@ def attest(c, t, s):
   logger.info(f"api_key: {api_key}")
   logger.info(f"claims: {claims}")
 
-  base_url = get_base_url(logger)
-  logger.info(f"Base URL for Region: {base_url}")
-
   isolation_type = IsolationTypeLookup.get(provider_tag, IsolationTypeLookup['default'])
-
-  endpoint = ""
-  # get attestation endpoint based on the region
-  if attestation_type.lower() == str('Guest').lower():
-    endpoint = "/attest/AzureGuest"
-    query_param = "?api-version=2020-10-01"
-
-    endpoint = base_url + endpoint + query_param
-  elif attestation_type.lower() == str('Platform').lower():
-    path = ""
-    query_param = ""
-    if isolation_type == IsolationType.TDX:
-      path = "/attest/TdxVm"
-      query_param = "?api-version=2023-04-01-preview"
-    elif isolation_type == IsolationType.SEV_SNP:
-      path = "/attest/SevSnpVm"
-      query_param = "?api-version=2022-08-01"
-    else:
-      pass
-
-    endpoint = base_url + path + query_param
-  else:
-    raise AttestException('Invalid parameter for attestation type')
+  endpoint = get_endpoint(logger, isolation_type, attestation_type)
   logger.info(f"Attestation endpoint: {endpoint}")
 
   # Log SHA512 of user provided claims
@@ -124,13 +105,12 @@ def attest(c, t, s):
 
   # Attest based on user configuration
   attestation_client = AttestationClient(logger, client_parameters)
-
-  if attestation_type.lower() == str('Guest').lower():
-      token = attestation_client.attest_guest()
-  elif attestation_type.lower() == str('Platform').lower():
-    token = attestation_client.attest_platform()
+  if attestation_type in ATTESTATION_METHODS:
+    method_name = ATTESTATION_METHODS[attestation_type]
+    token = getattr(attestation_client, method_name)()
   else:
-    raise AttestException('Invalid parameter for attestation type')
+    raise AttestException(f"Invalid parameter for attestation type: '{attestation_type}'. \
+                          Supported types: {', '.join(ATTESTATION_METHODS.keys())}")
 
   # Store hardware report and runtime data to files if the save flag is specified
   if s:

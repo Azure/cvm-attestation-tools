@@ -6,6 +6,21 @@ import json
 import random
 from src.Logger import Logger
 from src.ImdsClient import ImdsClient
+from src.Isolation import IsolationType
+
+
+# Define supported isolation types for better error reporting
+SUPPORTED_ISOLATION_TYPES = {
+    IsolationType.TDX: { "path": "/attest/TdxVm", "query": "?api-version=2023-04-01-preview" },
+    IsolationType.SEV_SNP: { "path": "/attest/SevSnpVm", "query": "?api-version=2022-08-01" }
+}
+
+# Define attestation type mapping
+ATTESTATION_TYPES = {
+    "guest": { "path": "/attest/AzureGuest", "query": "?api-version=2020-10-01" },
+    "platform": SUPPORTED_ISOLATION_TYPES
+}
+
 
 class EndpointSelector:
   def __init__(self, json_file, logger: Logger):
@@ -18,10 +33,10 @@ class EndpointSelector:
     """
 
     self.logger = logger
-    self.endpoints = self.load_endpoints(json_file)
+    self.endpoints = self._load_endpoints(json_file)
 
 
-  def load_endpoints(self, json_file):
+  def _load_endpoints(self, json_file):
     """
     Load endpoint data from a JSON file.
 
@@ -47,7 +62,7 @@ class EndpointSelector:
       return {}
 
 
-  def get_endpoint(self, region):
+  def _get_endpoint(self, region):
     """
     Get attestation URI for a region or select a random one if not found.
 
@@ -71,9 +86,13 @@ class EndpointSelector:
       return random.choice(list(self.endpoints.values())) if self.endpoints else None
   
 
-  def get_attestation_endpoint(self):
+  def get_attestation_endpoint(self, isolation_type: IsolationType, attestation_type: str):
     """
     Get the attestation endpoint based on the region.
+
+    Parameters:
+    isolation_type (IsolationType): Isolation type.
+    attestation_type (str): Attestation type.
 
     Returns:
     str: Attestation endpoint.
@@ -81,5 +100,18 @@ class EndpointSelector:
 
     imds_client = ImdsClient(self.logger)
     region = imds_client.get_region_from_compute_metadata()
+    base_url = self._get_endpoint(region)
 
-    return self.get_endpoint(region)
+    type = attestation_type.lower()
+    if type not in ATTESTATION_TYPES:
+      raise ValueError(f"Invalid attestation type '{type}'. Supported types: {', '.join(ATTESTATION_TYPES.keys())}")
+
+    if type == "guest":
+      return base_url + ATTESTATION_TYPES[type]["path"] + ATTESTATION_TYPES[type]["query"]
+    
+    if isolation_type not in SUPPORTED_ISOLATION_TYPES:
+      supported_types = ", ".join(SUPPORTED_ISOLATION_TYPES.keys())
+      raise ValueError(f"Invalid isolation type '{type}'. Supported types: {supported_types}")
+
+    isolation_info = SUPPORTED_ISOLATION_TYPES[isolation_type]
+    return base_url + isolation_info["path"] + isolation_info["query"]
