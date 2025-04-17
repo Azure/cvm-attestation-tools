@@ -145,11 +145,10 @@ class ImdsClient:
       'Content-Type': 'application/json',
       'Metadata': 'true'
     }
-    print('Getting region from compute metadata')
 
     response = requests.get(COMPUTE_METADATA_URL, headers=headers)
     if response.status_code == 200:
-      metadata = response.json
+      metadata = response.json()
       if metadata:
         return metadata['compute']['location']
     else:

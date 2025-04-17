@@ -8,13 +8,13 @@ from AttestationClient import AttestationClient, AttestationClientParameters, Ve
 from src.Isolation import IsolationType
 from src.Logger import Logger
 from urllib.parse import urlparse
+from src.EndpointSelector import EndpointSelector
+import os
 
 
 def parse_config_file(filename):
   with open(filename, 'r') as json_file:
-    # Parse the JSON data
-    data = json.load(json_file)
-  return data
+    return json.load(json_file)
 
 
 IsolationTypeLookup = {
@@ -35,6 +35,20 @@ AttestationProviderLookup = {
 
 class AttestException(Exception):
   pass
+
+
+def get_base_url(logger):
+  """
+  Get the base URL for the attestation endpoint based on the region.
+  """
+  current_dir = os.getcwd()
+  filename = 'attestation_uri_table.json'
+  endpoint_file_path = os.path.join(current_dir, filename)
+
+  endpoint_selector = EndpointSelector(endpoint_file_path, logger)
+  base_url = endpoint_selector.get_attestation_endpoint()
+
+  return base_url
 
 @click.command()
 @click.option(
@@ -57,7 +71,6 @@ def attest(c, t, s):
   logger.info(f"Reading config file: {c}")
 
   attestation_type = t
-  file_path = 'report.bin'
 
   # creates an attestation parameters based on user's config
   config_json = parse_config_file(c)
@@ -68,9 +81,37 @@ def attest(c, t, s):
 
   logger.info("Attestation tool configuration:")
   logger.info(f"provider_tag: {provider_tag}")
-  logger.info(f"endpoint: {endpoint}")
   logger.info(f"api_key: {api_key}")
   logger.info(f"claims: {claims}")
+
+  base_url = get_base_url(logger)
+  logger.info(f"Base URL for Region: {base_url}")
+
+  isolation_type = IsolationTypeLookup.get(provider_tag, IsolationTypeLookup['default'])
+
+  endpoint = ""
+  # get attestation endpoint based on the region
+  if attestation_type.lower() == str('Guest').lower():
+    endpoint = "/attest/AzureGuest"
+    query_param = "?api-version=2020-10-01"
+
+    endpoint = base_url + endpoint + query_param
+  elif attestation_type.lower() == str('Platform').lower():
+    path = ""
+    query_param = ""
+    if isolation_type == IsolationType.TDX:
+      path = "/attest/TdxVm"
+      query_param = "?api-version=2023-04-01-preview"
+    elif isolation_type == IsolationType.SEV_SNP:
+      path = "/attest/SevSnpVm"
+      query_param = "?api-version=2022-08-01"
+    else:
+      pass
+
+    endpoint = base_url + path + query_param
+  else:
+    raise AttestException('Invalid parameter for attestation type')
+  logger.info(f"Attestation endpoint: {endpoint}")
 
   # Log SHA512 of user provided claims
   hash_object = hashlib.sha512(json.dumps(claims).encode('utf-8'))
@@ -78,23 +119,14 @@ def attest(c, t, s):
   logger.info(f"SHA512 of user provided claims: {hex_dig.upper()}")
 
   # Build attestation client parameters
-  isolation_type = IsolationTypeLookup.get(provider_tag, IsolationTypeLookup['default'])
   provider = AttestationProviderLookup.get(provider_tag, AttestationProviderLookup['default'])
   client_parameters = AttestationClientParameters(endpoint, provider, isolation_type, claims, api_key)
 
   # Attest based on user configuration
   attestation_client = AttestationClient(logger, client_parameters)
 
-  parsed_endpoint = urlparse(endpoint)
-  if not parsed_endpoint.scheme or not parsed_endpoint.netloc:
-    raise ValueError(f"Invalid endpoint: {endpoint}. Endpoint must be a valid URL.")
-
   if attestation_type.lower() == str('Guest').lower():
-    # if attesting the guest we need to make sure the right endpoint is used
-    if 'attest/AzureGuest' in endpoint:
       token = attestation_client.attest_guest()
-    else:
-      raise AttestException('Invalid endpoint. Make sure endpoint is correct for attesting the Guest')
   elif attestation_type.lower() == str('Platform').lower():
     token = attestation_client.attest_platform()
   else:
@@ -108,6 +140,7 @@ def attest(c, t, s):
     runtime_data = hardware_evidence.runtime_data
 
     # Store hardware report
+    file_path = 'report.bin'
     with open(file_path, 'wb') as file:
       file.write(hardware_report)
     logger.info(f"Output successfully written to: {file_path}")

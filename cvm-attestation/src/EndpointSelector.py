@@ -81,6 +81,5 @@ class EndpointSelector:
 
     imds_client = ImdsClient(self.logger)
     region = imds_client.get_region_from_compute_metadata()
-    print(region)
 
     return self.get_endpoint(region)
