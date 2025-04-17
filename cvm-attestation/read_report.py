@@ -51,8 +51,8 @@ def handle_hardware_report(report_type, output_path, attestation_client):
 
   if report_type == 'snp_report':
     # Retrieve and deserialize the SNP report
-    report_binary = attestation_client.get_hardware_report()
-    report = AttestationReport.deserialize(report_binary)
+    evidence = attestation_client.get_hardware_evidence()
+    report = AttestationReport.deserialize(evidence.hardware_report)
 
     # Display the report
     report.display()
@@ -63,7 +63,7 @@ def handle_hardware_report(report_type, output_path, attestation_client):
       filename = output_path
 
     with open(filename, 'wb') as file:
-      file.write(report_binary)
+      file.write(evidence.hardware_report)
     logger.info(f"Report saved to: {filename}")
 
     logger.info("Got attestation report successfully!")
