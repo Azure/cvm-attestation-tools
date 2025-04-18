@@ -3,6 +3,10 @@ from AttestationClient import AttestationClient, AttestationClientParameters, Ve
 from src.Isolation import IsolationType
 from src.Logger import Logger
 from snp import AttestationReport
+from src.ImdsClient import ImdsClient
+from src.Encoder import Encoder
+from deserialize_tdx import parse_td_quote
+import os
 
 
 DEFAULT_ENDPOINT = 'https://sharedweu.weu.attest.azure.net/attest/SevSnpVm?api-version=2022-08-01'
@@ -48,11 +52,10 @@ def handle_hardware_report(report_type, output_path, attestation_client):
   """
   logger = attestation_client.log
   logger.info(f"Reading hardware report: {report_type}")
-
+  evidence = attestation_client.get_hardware_evidence()
   if report_type == 'snp_report':
     # Retrieve and deserialize the SNP report
-    report_binary = attestation_client.get_hardware_report()
-    report = AttestationReport.deserialize(report_binary)
+    report = AttestationReport.deserialize(evidence.hardware_report)
 
     # Display the report
     report.display()
@@ -68,7 +71,16 @@ def handle_hardware_report(report_type, output_path, attestation_client):
 
     logger.info("Got attestation report successfully!")
   elif report_type == 'td_quote':
-    logger.info("TD Quote report option is not implemented yet.")
+    imds_client = ImdsClient(logger)
+    #logger.info("TD Quote report option is not implemented yet.")
+    encoded_hardware_report = evidence.hardware_report
+    encoded_hw_evidence = imds_client.get_td_quote(encoded_hardware_report)
+    #does td_quote need to be in a file first?
+    td_quote = Encoder.base64url_decode(encoded_hw_evidence)
+    parse_td_quote(td_quote)
+   
+    # display the quote
+    # save the quote to a file hahahahhahahahaa
   else:
     raise ValueError(f"Invalid hardware report type: {report_type}")
 
