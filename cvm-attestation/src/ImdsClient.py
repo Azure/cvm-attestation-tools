@@ -116,24 +116,24 @@ class ImdsClient:
       self.log.error("Failed to decode VCEK certificate JSON", exc_info=True)
       raise VcekCertException(f"JSON decoding error: {e}") from e
 
-def get_region_from_compute_metadata(self):
-  """
-  Get the region from the compute metadata.
+  def get_region_from_compute_metadata(self):
+    """
+    Get the region from the compute metadata.
 
-  Returns:
-    The region string if available, otherwise None.
-  """
-  try:
-    response = self._send_request_with_retries(
-      method='get',
-      url=COMPUTE_METADATA_URL,
-      headers=METADATA_HEADERS,
-      exception_class=TDQuoteException  # Or define a specific exception if needed
-    )
+    Returns:
+      The region string if available, otherwise None.
+    """
+    try:
+      response = self._send_request_with_retries(
+        method='get',
+        url=COMPUTE_METADATA_URL,
+        headers=METADATA_HEADERS,
+        exception_class=TDQuoteException  # Or define a specific exception if needed
+      )
 
-    metadata = response.json()
-    return metadata.get('compute', {}).get('location')
-  except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
-    self.log.error(f"Exception retrieving compute metadata: {e}", exc_info=True)
-    return None
+      metadata = response.json()
+      return metadata.get('compute', {}).get('location')
+    except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
+      self.log.error(f"Exception retrieving compute metadata: {e}", exc_info=True)
+      return None
 
