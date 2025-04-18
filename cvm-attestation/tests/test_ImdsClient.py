@@ -6,8 +6,7 @@ import pytest
 import json
 from unittest.mock import MagicMock, patch
 import requests
-from src.ImdsClient import ImdsClient, TDQuoteException, VcekCertException
-
+from src.ImdsClient import ImdsClient, TDQuoteException, VcekCertException, MetadataException
 
 # Some mock data
 snp_data = {
@@ -121,3 +120,41 @@ def test_vcek_cert_fails_to_decode_json_response(mocker, imds_client):
             imds_client.get_vcek_certificate()
         assert 'JSON decoding error' in str(excinfo.value)
     assert mock_post.call_count == 1
+
+def test_get_region_success(mocker, imds_client):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = 'eastus\n'
+    mock_response.json.side_effect = Exception("Should not be called")
+
+    mocker.patch('requests.request', return_value=mock_response)
+
+    region = imds_client.get_region_from_compute_metadata()
+    assert region == 'eastus'
+
+
+def test_get_region_returns_none_on_empty_response(mocker, imds_client):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = ''
+
+    mocker.patch('requests.request', return_value=mock_response)
+
+    region = imds_client.get_region_from_compute_metadata()
+    assert region is None
+    imds_client.log.error.assert_called_with("Received empty response for compute metadata region.")
+
+
+def test_get_region_handles_metadata_exception(mocker, imds_client):
+    mocker.patch('requests.request', side_effect=MetadataException("retry failed"))
+
+    region = imds_client.get_region_from_compute_metadata()
+    assert region is None
+    imds_client.log.error.assert_any_call("Error retrieving compute metadata: retry failed", exc_info=True)
+
+
+def test_get_region_handles_unexpected_exception(mocker, imds_client):
+    with patch.object(ImdsClient, '_send_request_with_retries', side_effect=ValueError("unexpected")):
+        region = imds_client.get_region_from_compute_metadata()
+        assert region is None
+        imds_client.log.error.assert_any_call("Unexpected error retrieving region: unexpected", exc_info=True)

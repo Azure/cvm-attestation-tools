@@ -11,13 +11,18 @@ IMDS_URL = "http://169.254.169.254/metadata"
 THIM_PATH = "/THIM/amd/certification"
 THIM_ENDPOINT = IMDS_URL + THIM_PATH
 
-INSTANCE = "/instance?api-version=2021-01-01&format=json"
-COMPUTE_METADATA_URL = IMDS_URL + INSTANCE
+LOCATION = "/instance/compute/location"
+QUERY = "?api-version=2021-01-01&format=text"
+COMPUTE_METADATA_URL = IMDS_URL + LOCATION + QUERY
 
 METADATA_HEADERS = {
   'Content-Type': 'application/json',
   'Metadata': 'true'
 }
+
+
+class MetadataException(Exception):
+  pass
 
 
 class TDQuoteException(Exception):
@@ -121,19 +126,29 @@ class ImdsClient:
     Get the region from the compute metadata.
 
     Returns:
-      The region string if available, otherwise None.
+        str: The region string if available, otherwise None.
     """
+    self.log.info("Retrieving region from compute metadata...")
+    self.log.debug(f"Using metadata URL: {COMPUTE_METADATA_URL}")
+
     try:
       response = self._send_request_with_retries(
         method='get',
         url=COMPUTE_METADATA_URL,
         headers=METADATA_HEADERS,
-        exception_class=TDQuoteException  # Or define a specific exception if needed
+        exception_class=MetadataException
       )
 
-      metadata = response.json()
-      return metadata.get('compute', {}).get('location')
-    except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
-      self.log.error(f"Exception retrieving compute metadata: {e}", exc_info=True)
-      return None
+      location = response.text.strip()
+      if location:
+        return location
+      else:
+        self.log.error("Received empty response for compute metadata region.")
+        return None
 
+    except (requests.exceptions.RequestException, MetadataException) as e:
+      self.log.error(f"Error retrieving compute metadata: {e}", exc_info=True)
+      return None
+    except Exception as e:
+      self.log.error(f"Unexpected error retrieving region: {e}", exc_info=True)
+      return None
