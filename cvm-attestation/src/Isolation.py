@@ -6,11 +6,7 @@
 import json
 from enum import Enum
 import tpm_wrapper
-# from base64 import b64encode
 from src.Encoder import Encoder
-
-# def Encoder.base64_encode(data):
-#   return str(b64encode(data), "utf-8")
 
 
 class IsolationType(Enum):
@@ -61,11 +57,11 @@ class TdxEvidence(Evidence):
     self.encoded_hw_evidence = encoded_hw_evidence
     self.runtime_data = runtime_data
 
-    print(self.encoded_hw_evidence)
 
   def validate(self):
     # Add validation logic
     pass
+
 
   def get_evidence(self):
     return {
