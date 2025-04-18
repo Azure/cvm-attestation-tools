@@ -7,6 +7,7 @@ import random
 from src.Logger import Logger
 from src.ImdsClient import ImdsClient
 from src.Isolation import IsolationType
+import os
 
 
 # Define supported isolation types for better error reporting
@@ -64,27 +65,28 @@ class EndpointSelector:
 
   def _get_endpoint(self, region):
     """
-    Get attestation URI for a region or select a random one if not found.
+    Retrieve the attestation URI for a specific region. If the region is not
+    found, return a randomly selected URI from the available endpoints.
 
     Parameters:
-    region (str): Region name.
+      region (str): Region name.
 
     Returns:
-    str: Attestation URI for the region or a random one if not found.
+      str: Attestation URI for the region or a randomly selected one.
     """
 
-    # Normalize the region name by removing spaces
     region = region.replace(" ", "").lower()
     self.logger.info(f"Getting endpoint for region: {region}")
 
     if region in self.endpoints:
       return self.endpoints[region]
-    else:
-      self.logger.warning(
-        f"Warning: Region '{region}' not found. Selecting a random region."
-      )
-      return random.choice(list(self.endpoints.values())) if self.endpoints else None
-  
+
+    self.logger.warning(
+      f"Region '{region}' not found in configured endpoints. Using random endpoint instead."
+    )
+
+    return random.choice(list(self.endpoints.values()))
+
 
   def get_attestation_endpoint(self, isolation_type: IsolationType, attestation_type: str):
     """
