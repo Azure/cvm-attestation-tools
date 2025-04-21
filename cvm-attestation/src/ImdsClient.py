@@ -1,22 +1,28 @@
-# ImdsClient.py
-#
-# Copyright (c) Microsoft Corporation.
-# Licensed under the MIT license.
-
 import requests
 import json
 import time
 from src.Logger import Logger
 
-# IMDS endpoint for getting the TD Quote
 ACC_URL = "http://169.254.169.254/acc"
 QUOTE_PATH = "/tdquote"
-IMDS_ENDPOINT = ACC_URL + QUOTE_PATH
+TD_QUOTE_ENDPOINT = ACC_URL + QUOTE_PATH
 
-# IMDS endpoint for getting the VCek certificate
-IMDS_URL = "http://169.254.169.254/metadata";
-THIM_PATH = "/THIM/amd/certification";
+IMDS_URL = "http://169.254.169.254/metadata"
+THIM_PATH = "/THIM/amd/certification"
 THIM_ENDPOINT = IMDS_URL + THIM_PATH
+
+LOCATION = "/instance/compute/location"
+QUERY = "?api-version=2021-01-01&format=text"
+COMPUTE_METADATA_URL = IMDS_URL + LOCATION + QUERY
+
+METADATA_HEADERS = {
+  'Content-Type': 'application/json',
+  'Metadata': 'true'
+}
+
+
+class MetadataException(Exception):
+  pass
 
 
 class TDQuoteException(Exception):
@@ -31,105 +37,118 @@ class ImdsClient:
   def __init__(self, logger: Logger):
     self.log = logger
 
-  def get_td_quote(self, encoded_report):
-    # setup imds request
-    headers = {'Content-Type': 'application/json'}
-    request_body = {
-      "report": encoded_report
-    }
-
-    # Request TD Quote with 5 retries delaying by 1 second each request
-    delay = 1
-    max_retries = 5
+  def _send_request_with_retries(self, method, url, headers=None, data=None,
+                                 max_retries=5, initial_delay=1, delay_strategy='constant',
+                                 expected_status=200, exception_class=Exception):
     retries = 0
+    delay = initial_delay
+
     while retries < max_retries:
       try:
-        self.log.info("Starting td quote request")
-        response = requests.post(
-          IMDS_ENDPOINT,
-          data=json.dumps(request_body),
-          headers=headers
-        )
+        self.log.info(f"Sending {method.upper()} request to {url}")
+        response = requests.request(method, url, headers=headers, data=data)
 
-        if response.status_code == 200:
-          self.log.info("Received td quote successfully")
-          evidence_json = json.loads(response.text)
-          encoded_quote = evidence_json['quote']
+        if response.status_code == expected_status:
+          return response
 
-          return encoded_quote
-        else:
-          self.log.error('Failed to get td quote')
-          self.log.error(f'response: {response.text}')
-
-          retries += 1
-          if retries >= max_retries:
-            raise TDQuoteException(f'Error {response.status_code}: {response.text}')
-
-          self.log.info(f"Retrying in {delay} seconds... Attempt {retries}")
-          time.sleep(delay)
-      except requests.exceptions.RequestException as e:
-        self.log.error("Exception while fetching td quote", exc_info=True)
-
+        self.log.warning(f"Unexpected status code {response.status_code}: {response.text}")
         retries += 1
         if retries >= max_retries:
-          raise TDQuoteException(f'HTTP request failed with error {e}') from e
+          raise exception_class(f"Error {response.status_code}: {response.text}")
+      except requests.exceptions.RequestException as e:
+        self.log.error("Request exception occurred", exc_info=True)
+        retries += 1
+        if retries >= max_retries:
+          raise exception_class(f"HTTP request failed with error {e}") from e
 
-        self.log.info(f"Retrying in {delay} seconds... Attempt {retries}")
-        time.sleep(delay)
-      except json.JSONDecodeError as e:
-        self.log.error("JSON decode error", exc_info=True)
-        raise TDQuoteException(f'Error decoding JSON response. Error: {e}') from e
+      self.log.info(f"Retrying in {delay} seconds... Attempt {retries}")
+      time.sleep(delay)
+      delay = delay * 2 if delay_strategy == 'exponential' else delay
 
+    raise exception_class("Request failed after all retries")
+
+  def get_td_quote(self, encoded_report):
+    """
+    Get the TD quote from the IMDS endpoint.
+    Parameters:
+      encoded_report: The encoded report to be sent in the request body.
+    
+    Returns:
+      The TD quote received from the IMDS endpoint.
+    """
+ 
+    headers = {'Content-Type': 'application/json'}
+    request_body = json.dumps({"report": encoded_report})
+
+    response = self._send_request_with_retries(
+      method='post',
+      url=TD_QUOTE_ENDPOINT,
+      headers=headers,
+      data=request_body,
+      exception_class=TDQuoteException
+    )
+
+    try:
+      evidence_json = response.json()
+      self.log.info("Received td quote successfully")
+      return evidence_json['quote']
+    except json.JSONDecodeError as e:
+      self.log.error("Failed to decode TD quote JSON", exc_info=True)
+      raise TDQuoteException(f"JSON decoding error: {e}") from e
 
   def get_vcek_certificate(self):
-    # setup imds request
-    headers = {
-      'Content-Type': 'application/json',
-      'Metadata': 'true'
-    }
+    """
+    Get the VCEK certificate from the IMDS endpoint.
 
-    # Request Vcek Certificate with 5 retries, increasing delay by 2x each request
-    delay = 1
-    max_retries = 5
-    retries = 0
-    while retries < max_retries:
-      try:
-        self.log.info("Starting vcek certificate request")
-        response = requests.get(
-          THIM_ENDPOINT,
-          headers = headers
-        )
+    Returns:
+      The VCEK certificate received from the IMDS endpoint.
+    """
 
-        if response.status_code == 200:
-          data_json = json.loads(response.text)
-          self.log.info(f"Received certificate successfully, TCB version: {data_json['tcbm']}")
-          cert = data_json['vcekCert']
-          chain = data_json['certificateChain']
-          cert_chain = cert + chain
-          cert_chain = bytearray(cert_chain.encode('utf-8'))
+    response = self._send_request_with_retries(
+      method='get',
+      url=THIM_ENDPOINT,
+      headers=METADATA_HEADERS,
+      delay_strategy='exponential',
+      exception_class=VcekCertException
+    )
 
-          return cert_chain
-        else:
-          self.log.error('Failed to get vcek certificate')
-          self.log.error(f'response: {response.text}')
+    try:
+      data_json = response.json()
+      self.log.info(f"Received VCEK certificate, TCB version: {data_json.get('tcbm')}")
+      cert_chain = data_json['vcekCert'] + data_json['certificateChain']
+      return bytearray(cert_chain.encode('utf-8'))
+    except json.JSONDecodeError as e:
+      self.log.error("Failed to decode VCEK certificate JSON", exc_info=True)
+      raise VcekCertException(f"JSON decoding error: {e}") from e
 
-          retries += 1
-          if retries >= max_retries:
-            raise VcekCertException(f'Error {response.status_code}: {response.text}')
+  def get_region_from_compute_metadata(self):
+    """
+    Get the region from the compute metadata.
 
-          self.log.info(f"Retrying in {delay} seconds... Attempt {retries}")
-          time.sleep(delay)
-          delay *= 2
-      except requests.exceptions.RequestException as e:
-        self.log.error("Exception while fetching vcek certificate", exc_info=True)
+    Returns:
+        str: The region string if available, otherwise None.
+    """
+    self.log.info("Retrieving region from compute metadata...")
+    self.log.debug(f"Using metadata URL: {COMPUTE_METADATA_URL}")
 
-        retries += 1
-        if retries >= max_retries:
-          raise VcekCertException(f'HTTP request failed with error {e}') from e
+    try:
+      response = self._send_request_with_retries(
+        method='get',
+        url=COMPUTE_METADATA_URL,
+        headers=METADATA_HEADERS,
+        exception_class=MetadataException
+      )
 
-        self.log.info(f"Retrying in {delay} seconds... Attempt {retries}")
-        time.sleep(delay)
-      except json.JSONDecodeError as e:
-        print(e)
-        self.log.error("JSON decode error", exc_info=True)
-        raise VcekCertException(f'Error decoding JSON response. Error: {e}') from e
+      location = response.text.strip()
+      if location:
+        return location
+      else:
+        self.log.error("Received empty response for compute metadata region.")
+        return None
+
+    except (requests.exceptions.RequestException, MetadataException) as e:
+      self.log.error(f"Error retrieving compute metadata: {e}", exc_info=True)
+      return None
+    except Exception as e:
+      self.log.error(f"Unexpected error retrieving region: {e}", exc_info=True)
+      return None
