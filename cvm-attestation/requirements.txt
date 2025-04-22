@@ -5,3 +5,4 @@ pytest-mock
 Click
 pyjwt
 cryptography
+construct

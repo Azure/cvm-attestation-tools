@@ -1,9 +1,14 @@
+# deserialize_tdx.py
+#
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 from construct import Struct, Int16ul, Int32ul, Int64ul, Bytes, Array, this
 import sys
 
-def parse_td_quote(file_path):
+def deserialize_td_quote(tq_quote):
     """
-    Parses the given TD quote binary file and returns the structured data.
+    Parses the given TD quote object and returns the structured data.
     """
     TDQuoteHeader = Struct(
         "version" / Int16ul,
@@ -45,9 +50,7 @@ def parse_td_quote(file_path):
         "quote_signature_data" / Bytes(this.quote_signature_data_len)
     )
     
-    with open(file_path, "rb") as f:
-        data = f.read()
-        return TDQuote.parse(data)
+    return TDQuote.parse(tq_quote)
 
 def print_td_quote(parsed_quote):
     """
@@ -66,26 +69,26 @@ def print_td_quote(parsed_quote):
     print(f"  Quote Body Type: {parsed_quote.body.quote_body_type.hex()}")
     print(f"  Size: {parsed_quote.body.size}")
     
-    print("\nTD Quote Body:")
-    print(f"  TEE TCB SVN: {parsed_quote.body.body.tee_tcb_svn.hex()}")
-    print(f"  MRSEAM: {parsed_quote.body.body.mrseam.hex()}")
-    print(f"  MRSIGNERSEAM: {parsed_quote.body.body.mrsignerseam.hex()}")
-    print(f"  SEAM ATTRIBUTES: {parsed_quote.body.body.seam_attributes.hex()}")
-    print(f"  TD ATTRIBUTES: {parsed_quote.body.body.td_attributes.hex()}")
-    print(f"  XFAM: {parsed_quote.body.body.xfam}")
-    print(f"  MR TD: {parsed_quote.body.body.mr_td.hex()}")
-    print(f"  MR CONFIG ID: {parsed_quote.body.body.mr_config_id.hex()}")
-    print(f"  MR OWNER: {parsed_quote.body.body.mr_owner.hex()}")
-    print(f"  MR OWNER CONFIG: {parsed_quote.body.body.mr_owner_config.hex()}")
-    for i, rtmr in enumerate(parsed_quote.body.body.rtmr):
-        print(f"  RTMR[{i}]: {rtmr.hex()}")
-    print(f"  REPORT DATA: {parsed_quote.body.body.report_data.hex()}")
-    print(f"  TEE TCB SVN 2: {parsed_quote.body.body.tee_tcb_svn_2.hex()}")
-    print(f"  MR SERVICE TD: {parsed_quote.body.body.mr_service_td.hex()}")
+    # print("\nTD Quote Body:")
+    # print(f"  TEE TCB SVN: {parsed_quote.body.body.tee_tcb_svn.hex()}")
+    # print(f"  MRSEAM: {parsed_quote.body.body.mrseam.hex()}")
+    # print(f"  MRSIGNERSEAM: {parsed_quote.body.body.mrsignerseam.hex()}")
+    # print(f"  SEAM ATTRIBUTES: {parsed_quote.body.body.seam_attributes.hex()}")
+    # print(f"  TD ATTRIBUTES: {parsed_quote.body.body.td_attributes.hex()}")
+    # print(f"  XFAM: {parsed_quote.body.body.xfam}")
+    # print(f"  MR TD: {parsed_quote.body.body.mr_td.hex()}")
+    # print(f"  MR CONFIG ID: {parsed_quote.body.body.mr_config_id.hex()}")
+    # print(f"  MR OWNER: {parsed_quote.body.body.mr_owner.hex()}")
+    # print(f"  MR OWNER CONFIG: {parsed_quote.body.body.mr_owner_config.hex()}")
+    # for i, rtmr in enumerate(parsed_quote.body.body.rtmr):
+    #     print(f"  RTMR[{i}]: {rtmr.hex()}")
+    # print(f"  REPORT DATA: {parsed_quote.body.body.report_data.hex()}")
+    # print(f"  TEE TCB SVN 2: {parsed_quote.body.body.tee_tcb_svn_2.hex()}")
+    # print(f"  MR SERVICE TD: {parsed_quote.body.body.mr_service_td.hex()}")
     
-    print("\nQuote Signature Data:")
-    print(f"  Length: {parsed_quote.quote_signature_data_len}")
-    print(f"  Data: {parsed_quote.quote_signature_data.hex()}")
+    # print("\nQuote Signature Data:")
+    # print(f"  Length: {parsed_quote.quote_signature_data_len}")
+    # print(f"  Data: {parsed_quote.quote_signature_data.hex()}")
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -93,5 +96,5 @@ if __name__ == "__main__":
         sys.exit(1)
     
     quote_path = sys.argv[1]
-    parsed_quote = parse_td_quote(quote_path)
+    parsed_quote = deserialize_td_quote(quote_path)
     print_td_quote(parsed_quote)

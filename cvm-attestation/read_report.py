@@ -5,7 +5,7 @@ from src.Logger import Logger
 from snp import AttestationReport
 from src.ImdsClient import ImdsClient
 from src.Encoder import Encoder
-from deserialize_tdx import parse_td_quote
+from deserialize_tdx import deserialize_td_quote, print_td_quote
 import os
 
 
@@ -37,7 +37,7 @@ def read_report(t, o):
   client_parameters = AttestationClientParameters(
     DEFAULT_ENDPOINT,
     Verifier.MAA,
-    IsolationType.SEV_SNP,
+    IsolationType.TDX, #was SEV_SNP
     ''
   )
   attestation_client = AttestationClient(logger, client_parameters)
@@ -72,15 +72,13 @@ def handle_hardware_report(report_type, output_path, attestation_client):
     logger.info("Got attestation report successfully!")
   elif report_type == 'td_quote':
     imds_client = ImdsClient(logger)
-    #logger.info("TD Quote report option is not implemented yet.")
-    encoded_hardware_report = evidence.hardware_report
-    encoded_hw_evidence = imds_client.get_td_quote(encoded_hardware_report)
-    #does td_quote need to be in a file first?
+    hw_report = evidence.hardware_report
+    encoded_hw_report = Encoder.base64url_encode(hw_report)
+    encoded_hw_evidence = imds_client.get_td_quote(encoded_hw_report)
     td_quote = Encoder.base64url_decode(encoded_hw_evidence)
-    parse_td_quote(td_quote)
-   
-    # display the quote
-    # save the quote to a file hahahahhahahahaa
+    print("length of td_quote:", len(td_quote))
+    deserialized_td_quote = deserialize_td_quote(td_quote)
+    print_td_quote(deserialized_td_quote)
   else:
     raise ValueError(f"Invalid hardware report type: {report_type}")
 
