@@ -251,10 +251,6 @@ def test_attest_guest_returns_None_after_http_response_400(maa_provider, mocker)
 
 
 def test_attest_platform_retries_with_retry_after_header_until_max_retries(maa_provider, mocker):
-  """
-  Tests if the retry logic correctly handles Retry-After header
-  and waits for the correct duration before retrying.
-  """
   mock_response = MagicMock()
   mock_response.status_code = 429
   mock_response.headers = {'Retry-After': '2'}
@@ -279,9 +275,6 @@ def test_attest_platform_retries_with_retry_after_header_until_max_retries(maa_p
 
 
 def test_attest_platform_succeeds_after_retries(maa_provider, mocker):
-  """
-  Ensures that after transient failures, the request succeeds after retrying.
-  """
   mock_responses = [
     MagicMock(status_code=429, headers={'Retry-After': '10'}, text="Too many requests"),
     MagicMock(status_code=429, headers={'Retry-After': '5'}, text="Too many requests"),
@@ -301,9 +294,6 @@ def test_attest_platform_succeeds_after_retries(maa_provider, mocker):
     mock_sleep.assert_has_calls([call(10), call(5)])  # Retries before success
 
 def test_attest_guest_succeeds_after_retries(maa_provider, mocker):
-  """
-  Ensures that after transient failures, the request succeeds after retrying.
-  """
   mock_responses = [
     MagicMock(status_code=429, headers={'Retry-After': '10'}, text="Too many requests"),
     MagicMock(status_code=429, headers={'Retry-After': '5'}, text="Too many requests"),
@@ -320,3 +310,25 @@ def test_attest_guest_succeeds_after_retries(maa_provider, mocker):
     assert result == "encoded_token_value"
     assert mock_post.call_count == 3  # Two failures, then success
     mock_sleep.assert_has_calls([call(10), call(5)])  # Retries before success
+
+
+def test_should_try_backoff_when_retry_after_not_present(maa_provider, mocker):
+  # Create a mock response object with not Retry-After in the header
+  mock_responses = [
+    MagicMock(status_code=429, headers={}, text="Too many requests"),
+    MagicMock(status_code=429, headers={}, text="Too many requests"),
+    MagicMock(status_code=200, text='{"token": "encoded_token_value"}')
+  ]
+
+  mock_post = mocker.patch('requests.post', side_effect=mock_responses)
+
+  # Since the Retry-After header is not present, we should use the default backoff time
+  # which is 1 second for the first retry, and then exponential backoff for subsequent retries.
+  with patch('time.sleep', return_value=None) as mock_sleep:
+    evidence = {'dummy_key': 'dummy_value'}
+    maa_provider.isolation = IsolationType.TDX
+    result = maa_provider.attest_guest(evidence)
+
+    assert result == "encoded_token_value"
+    assert mock_post.call_count == 3  # Two failures, then success
+    mock_sleep.assert_has_calls([call(1), call(2)])  # Retries before success
