@@ -5,8 +5,7 @@ from src.Logger import Logger
 from snp import AttestationReport
 from src.ImdsClient import ImdsClient
 from src.Encoder import Encoder
-from deserialize_tdx import deserialize_td_quote, print_td_quote
-import os
+from deserialize_tdx_v4 import deserialize_td_quotev4, print_td_quotev4
 
 
 DEFAULT_ENDPOINT = 'https://sharedweu.weu.attest.azure.net/attest/SevSnpVm?api-version=2022-08-01'
@@ -37,7 +36,7 @@ def read_report(t, o):
   client_parameters = AttestationClientParameters(
     DEFAULT_ENDPOINT,
     Verifier.MAA,
-    IsolationType.TDX, #was SEV_SNP
+    IsolationType.SEV_SNP if t == 'snp_report' else IsolationType.TDX,
     ''
   )
   attestation_client = AttestationClient(logger, client_parameters)
@@ -77,8 +76,14 @@ def handle_hardware_report(report_type, output_path, attestation_client):
     encoded_hw_evidence = imds_client.get_td_quote(encoded_hw_report)
     td_quote = Encoder.base64url_decode(encoded_hw_evidence)
     print("length of td_quote:", len(td_quote))
-    deserialized_td_quote = deserialize_td_quote(td_quote)
-    print_td_quote(deserialized_td_quote)
+    try:
+      deserialized_td_quote = deserialize_td_quotev4(td_quote)
+      print_td_quotev4(deserialized_td_quote)
+      
+    except UnicodeDecodeError:
+      logger.error("Failed to decode the TD quote header. Ensure the report is valid.")
+      return
+    
   else:
     raise ValueError(f"Invalid hardware report type: {report_type}")
 
