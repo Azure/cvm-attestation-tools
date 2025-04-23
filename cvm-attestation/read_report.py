@@ -3,6 +3,9 @@ from AttestationClient import AttestationClient, AttestationClientParameters, Ve
 from src.Isolation import IsolationType
 from src.Logger import Logger
 from snp import AttestationReport
+from src.ImdsClient import ImdsClient
+from src.Encoder import Encoder
+from deserialize_tdx_v4 import deserialize_td_quotev4, print_td_quotev4
 
 
 DEFAULT_ENDPOINT = 'https://sharedweu.weu.attest.azure.net/attest/SevSnpVm?api-version=2022-08-01'
@@ -33,7 +36,7 @@ def read_report(t, o):
   client_parameters = AttestationClientParameters(
     DEFAULT_ENDPOINT,
     Verifier.MAA,
-    IsolationType.SEV_SNP,
+    IsolationType.SEV_SNP if t == 'snp_report' else IsolationType.TDX,
     ''
   )
   attestation_client = AttestationClient(logger, client_parameters)
@@ -48,10 +51,9 @@ def handle_hardware_report(report_type, output_path, attestation_client):
   """
   logger = attestation_client.log
   logger.info(f"Reading hardware report: {report_type}")
-
+  evidence = attestation_client.get_hardware_evidence()
   if report_type == 'snp_report':
     # Retrieve and deserialize the SNP report
-    evidence = attestation_client.get_hardware_evidence()
     report = AttestationReport.deserialize(evidence.hardware_report)
 
     # Display the report
@@ -68,7 +70,19 @@ def handle_hardware_report(report_type, output_path, attestation_client):
 
     logger.info("Got attestation report successfully!")
   elif report_type == 'td_quote':
-    logger.info("TD Quote report option is not implemented yet.")
+    imds_client = ImdsClient(logger)
+    hw_report = evidence.hardware_report
+    encoded_hw_report = Encoder.base64url_encode(hw_report)
+    encoded_hw_evidence = imds_client.get_td_quote(encoded_hw_report)
+    td_quote = Encoder.base64url_decode(encoded_hw_evidence)
+    try:
+      deserialized_td_quote = deserialize_td_quotev4(td_quote)
+      print_td_quotev4(deserialized_td_quote)
+      
+    except UnicodeDecodeError:
+      logger.error("Failed to decode the TD quote header. Ensure the report is valid.")
+      return
+    
   else:
     raise ValueError(f"Invalid hardware report type: {report_type}")
 
