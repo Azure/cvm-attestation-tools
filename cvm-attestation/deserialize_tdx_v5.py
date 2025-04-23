@@ -50,7 +50,11 @@ def deserialize_td_quotev5(tq_quote):
         "quote_signature_data" / Bytes(this.quote_signature_data_len)
     )
     
-    return TDQuotev5.parse(tq_quote)
+    try:
+        return TDQuotev5.parse(tq_quote)
+    except Exception as e:
+        print(f"Error parsing TD Quote: {e}", file=sys.stderr)
+        return None
 
 def print_td_quotev5(parsed_quote):
     """

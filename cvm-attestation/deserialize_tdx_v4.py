@@ -1,4 +1,4 @@
-# deserialize_tdx_v5.py
+# deserialize_tdx_v4.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
@@ -11,10 +11,8 @@ def deserialize_td_quotev4(tq_quote):
     Parses the given TD quote object and returns the structured data.
     :param tq_quote: The TD quote binary data.
     :return: Parsed TD Quote structure.
-    
     """
     
-    # Define the Quote Header structure
     QuoteHeaderv4 = Struct(
         "version" / Int16ul,
         "attestation_key_type" / Int16ul,
@@ -25,7 +23,6 @@ def deserialize_td_quotev4(tq_quote):
         "user_data" / Bytes(20)
     )
 
-    # Define the Enclave Report Body structure
     TDQuoteBodyv4 = Struct(
     "tee_tcb_svn" / Bytes(16),
     "mrseam" / Bytes(48),
@@ -44,7 +41,6 @@ def deserialize_td_quotev4(tq_quote):
     "report_data" / Bytes(64)
     )
 
-    # Define the Quote Signature Data structure
     QuoteSignatureDatav4 = Struct(
         "signature" / Bytes(64),
         "attestation_key" / Bytes(64),
@@ -53,7 +49,6 @@ def deserialize_td_quotev4(tq_quote):
         "cert_data" / Bytes(this.cert_data_size)
     )
 
-    # Define the complete SGX Quote V4 structure
     TDQuote_V4 = Struct(
     "header" / QuoteHeaderv4,
     "td_quote_body" / TDQuoteBodyv4,

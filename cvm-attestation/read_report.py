@@ -75,7 +75,6 @@ def handle_hardware_report(report_type, output_path, attestation_client):
     encoded_hw_report = Encoder.base64url_encode(hw_report)
     encoded_hw_evidence = imds_client.get_td_quote(encoded_hw_report)
     td_quote = Encoder.base64url_decode(encoded_hw_evidence)
-    print("length of td_quote:", len(td_quote))
     try:
       deserialized_td_quote = deserialize_td_quotev4(td_quote)
       print_td_quotev4(deserialized_td_quote)
