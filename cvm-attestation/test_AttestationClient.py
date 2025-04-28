@@ -131,7 +131,14 @@ def test_get_hardware_evidence_success(
 
 @patch('AttestationClient.TssWrapper')
 @patch('AttestationClient.ReportParser')
-def test_get_hardware_evidence_tdx_not_supported(mock_report_parser, mock_tss_wrapper, attestation_client):
+@patch('AttestationClient.Encoder')
+@patch('AttestationClient.ImdsClient')
+def test_get_hardware_evidence_tdx_successful(
+  mock_imds_client,
+  mock_encoder,
+  mock_report_parser,
+  mock_tss_wrapper,
+  attestation_client):
   # Set isolation type to TDX
   attestation_client.parameters.isolation_type = IsolationType.TDX
 
@@ -141,12 +148,19 @@ def test_get_hardware_evidence_tdx_not_supported(mock_report_parser, mock_tss_wr
   mock_report_parser.extract_report_type.return_value = "tdx"
   mock_report_parser.extract_hw_report.return_value = b"mock_hw_report"
   mock_report_parser.extract_runtimes_data.return_value = b"mock_runtime_data"
-  
+
+  # Mock ImdsClient methods
+  imds_client_instance = mock_imds_client.return_value
+  imds_client_instance.get_td_quote.return_value = b"mock_td_quote"
+
+  # Mock Encoder methods
+  mock_encoder.base64url_encode.side_effect = lambda x: f"encoded_{x.decode()}" if isinstance(x, bytes) else f"encoded_{x}"
+  mock_encoder.base64url_decode.side_effect = lambda x: b"decoded_" + x if isinstance(x, bytes) else b"decoded_" + x.encode()
+
   evidence = attestation_client.get_hardware_evidence()
   assert isinstance(evidence, HardwareEvidence)
-  assert evidence.hardware_report == b"mock_hw_report"
+  assert evidence.hardware_report == b"decoded_mock_td_quote"
   assert evidence.runtime_data == b"mock_runtime_data"
-  attestation_client.log.info.assert_called_with('Hardware report parsing for TDX not supported yet')
 
 
 @patch('AttestationClient.TssWrapper')

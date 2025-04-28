@@ -70,13 +70,8 @@ def handle_hardware_report(report_type, output_path, attestation_client):
 
     logger.info("Got attestation report successfully!")
   elif report_type == 'td_quote':
-    imds_client = ImdsClient(logger)
-    hw_report = evidence.hardware_report
-    encoded_hw_report = Encoder.base64url_encode(hw_report)
-    encoded_hw_evidence = imds_client.get_td_quote(encoded_hw_report)
-    td_quote = Encoder.base64url_decode(encoded_hw_evidence)
     try:
-      deserialized_td_quote = deserialize_td_quotev4(td_quote)
+      deserialized_td_quote = deserialize_td_quotev4(evidence.hardware_report)
       print_td_quotev4(deserialized_td_quote)
       
     except UnicodeDecodeError:

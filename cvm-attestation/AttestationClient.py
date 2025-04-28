@@ -140,10 +140,20 @@ class AttestationClient():
       if report_type == 'snp' and isolation_type == IsolationType.SEV_SNP:
         self.log_snp_report(hw_report)
       elif report_type == 'tdx' and isolation_type == IsolationType.TDX:
-        self.log.info("Hardware report parsing for TDX not supported yet")
+        # self.log.info("Fetching td quote...")
+        imds_client = ImdsClient(self.log)
+        encoded_report = Encoder.base64url_encode(hw_report)
+        encoded_hw_evidence = imds_client.get_td_quote(encoded_report)
+        hw_report = Encoder.base64url_decode(encoded_hw_evidence)
+        print(hw_report, report_type, runtime_data)
+        # self.log.info("Finished fetching td quote")
+
+        # self.log.info("Hardware report parsing for TDX not supported yet")
       else:
         raise UnsupportedReportTypeException(f"Unsupported report type: {report_type}")
 
+      evidence = HardwareEvidence(report_type, hw_report, runtime_data)
+      print('evidence: ', evidence)
       return HardwareEvidence(report_type, hw_report, runtime_data)
     except Exception as e:
       self.log.error(f"Error while reading hardware report. Exception {e}")
