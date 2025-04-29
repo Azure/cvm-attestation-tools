@@ -33,7 +33,7 @@ function Build-And-Install {
     # Install the built wheel
     $wheel = Get-ChildItem -Path dist\*.whl | Select-Object -First 1
     if ($wheel) {
-        pip install $wheel.FullName
+        python.exe -m pip install $wheel.FullName
     } else {
         Write-Error "Build failed: No .whl file found in dist/"
         exit 1
