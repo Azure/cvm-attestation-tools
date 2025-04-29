@@ -151,8 +151,6 @@ class AttestationClient():
       else:
         raise UnsupportedReportTypeException(f"Unsupported report type: {report_type}")
 
-      evidence = HardwareEvidence(report_type, hw_report, runtime_data)
-      print('evidence: ', evidence)
       return HardwareEvidence(report_type, hw_report, runtime_data)
     except Exception as e:
       self.log.error(f"Error while reading hardware report. Exception {e}")
