@@ -141,10 +141,13 @@ class AttestationClient():
         self.log_snp_report(hw_report)
       elif report_type == 'tdx' and isolation_type == IsolationType.TDX:
         self.log.info("Fetching td quote...")
+
+        # Logs important TDX fields from the hardware report
         imds_client = ImdsClient(self.log)
         encoded_report = Encoder.base64url_encode(hw_report)
         encoded_hw_evidence = imds_client.get_td_quote(encoded_report)
         hw_report = Encoder.base64url_decode(encoded_hw_evidence)
+
         self.log.info("Finished fetching td quote")
 
         self.log.info("Hardware report parsing for TDX not supported yet")
@@ -169,7 +172,7 @@ class AttestationClient():
         self.log.info('Attesting Guest Evidence...')
 
         hardware_evidence = self.get_hardware_evidence()
-        hw_report = hardware_evidence.hardware_report
+        hw_report = hardware_evidence.hardware_report   # td_quote or snp report
         runtime_data = hardware_evidence.runtime_data
         report_type = hardware_evidence.type
 
@@ -177,10 +180,7 @@ class AttestationClient():
         hw_evidence = ""
         imds_client = ImdsClient(self.log)
         if report_type == 'tdx':
-          encoded_report = Encoder.base64url_encode(hw_report)
-          encoded_hw_evidence = imds_client.get_td_quote(encoded_report)
-          td_quote = Encoder.base64url_decode(encoded_hw_evidence)
-          hw_evidence = TdxEvidence(td_quote, runtime_data)
+          hw_evidence = TdxEvidence(hw_report, runtime_data)
         elif report_type == 'snp':
           cert_chain = imds_client.get_vcek_certificate()
           hw_evidence = SnpEvidence(hw_report, runtime_data, cert_chain)
