@@ -1,0 +1,87 @@
+name: Build and Release
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  Build-On-Windows:
+    runs-on: windows-2022
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Build
+        shell: pwsh
+        run: |
+          cd ${{ github.workspace }}\cvm-attestation
+          .\install.ps1
+          pip install pyinstaller
+          pyinstaller .\attest.py
+          cp ${{ github.workspace }}\cvm-attestation\*.json ${{ github.workspace }}\cvm-attestation\dist\attest\
+      - uses: actions/upload-artifact@v4
+        with:
+          name: attest-win
+          path: ${{ github.workspace }}\cvm-attestation\dist\attest\*
+
+  Build-On-Linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Build
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/cvm-attestation
+          ./install.sh
+          sudo pip install pyinstaller
+          sudo pyinstaller ./attest.py
+          sudo cp ${{ github.workspace }}/cvm-attestation/*.json ${{ github.workspace }}/cvm-attestation/dist/attest/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: attest-lin
+          path: ${{ github.workspace }}/cvm-attestation/dist/attest/*
+
+  Create-Release:
+    runs-on: ubuntu-22.04
+    needs: [Build-On-Windows, Build-On-Linux]
+    steps:
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: attest-win
+          path: ./release-assets/windows
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: attest-lin
+          path: ./release-assets/linux
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: "Release v${{ github.run_number }}"
+          body: |
+            Automated release from GitHub Actions.
+            Includes builds for Windows and Linux.
+          draft: false
+          prerelease: false
+      - name: Upload Windows artifact to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release-assets/windows
+          asset_name: attest-win.zip
+          asset_content_type: application/zip
+      - name: Upload Linux artifact to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release-assets/linux
+          asset_name: attest-lin.zip
+          asset_content_type: application/zip

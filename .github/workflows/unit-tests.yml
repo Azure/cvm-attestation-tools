@@ -1,0 +1,41 @@
+name: Run Unit Tests
+on: [push, pull_request]
+
+jobs:
+  Run-Pytests-Linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          cd ${{ github.workspace }}/cvm-attestation
+          pip install -r requirements.txt
+      - name: Run Pytest
+        run: |
+          cd ${{ github.workspace }}/cvm-attestation
+          pytest --maxfail=5 --disable-warnings
+
+  Run-Pytests-Windows:
+    runs-on: windows-2022
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          cd ${{ github.workspace }}\cvm-attestation
+          pip install -r requirements.txt
+      - name: Run Pytest
+        shell: pwsh
+        run: |
+          cd ${{ github.workspace }}\cvm-attestation
+          pytest --maxfail=5 --disable-warnings
