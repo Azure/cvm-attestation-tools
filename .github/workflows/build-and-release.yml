@@ -97,19 +97,19 @@ jobs:
           git push origin v${next_version}
           git push
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.bump.outputs.next_version }}
-          release_name: "Release v${{ steps.bump.outputs.next_version }}"
-          body: |
-            Automated release from GitHub Actions.
-            Includes builds for Windows and Linux.
-          draft: false
-          prerelease: false
+      # - name: Create GitHub Release
+      #   id: create_release
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     tag_name: v${{ steps.bump.outputs.next_version }}
+      #     release_name: "Release v${{ steps.bump.outputs.next_version }}"
+      #     body: |
+      #       Automated release from GitHub Actions.
+      #       Includes builds for Windows and Linux.
+      #     draft: false
+      #     prerelease: false
 
       - name: Generate Release Notes
         uses: release-drafter/release-drafter@v5
