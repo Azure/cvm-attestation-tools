@@ -76,6 +76,16 @@ jobs:
           prerelease: false
       - name: run_echo
         run: pwd && ls ./release-assets/windows && ls ./release-assets/linux
+      - name: Zip Windows artifact
+        run: |
+          cd ./release-assets/windows
+          zip -r attest-win.zip *
+      - name: Zip Linux artifact
+        run: |
+          cd ./release-assets/linux
+          zip -r attest-lin.zip *
+      - name: run_echo
+        run: pwd && ls ./release-assets/windows && ls ./release-assets/linux
       - name: Upload Windows artifact to release
         uses: actions/upload-release-asset@v1
         env:
@@ -91,6 +101,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: /home/runner/work/cvm-attestation-tools/cvm-attestation-tools/release-assets/linux/attest-lin.zip
+          asset_path: ./release-assets/linux/attest-lin.zip
           asset_name: attest-lin.zip
           asset_content_type: application/zip
