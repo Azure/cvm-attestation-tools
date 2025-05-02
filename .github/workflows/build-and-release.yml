@@ -80,9 +80,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release-assets/windows
+          asset_path: attest-win.zip
           asset_name: attest-win.zip
           asset_content_type: application/zip
+      - name: run_echo
+        run: pwd && ls -la
       - name: Upload Linux artifact to release
         uses: actions/upload-release-asset@v1
         env:
