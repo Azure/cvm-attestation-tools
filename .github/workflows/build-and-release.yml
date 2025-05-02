@@ -3,11 +3,12 @@ on:
   push:
     branches:
       - github-build
+  workflow_dispatch:
+  pull_request_target:
 
 permissions:
   contents: write  # Required for creating releases and uploading assets
   actions: read    # Default read access for actions
-  packages: write  # Optional, if you are dealing with packages
 
 jobs:
   Build-On-Windows:
