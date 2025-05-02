@@ -1,4 +1,5 @@
 name: Build and Release
+
 on:
   push:
     branches:
@@ -51,41 +52,71 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [Build-On-Windows, Build-On-Linux]
     steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
           name: attest-win
           path: ./release-assets/windows
+
       - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
           name: attest-lin
           path: ./release-assets/linux
+
+      - name: Zip Windows artifact
+        run: |
+          cd ./release-assets/windows
+          zip -r attest-win.zip *
+
+      - name: Zip Linux artifact
+        run: |
+          cd ./release-assets/linux
+          zip -r attest-lin.zip *
+
+      - name: Bump Version
+        id: bump_version
+        uses: actions/semver@v2
+        with:
+          major: ${{ github.event.inputs.major || false }}
+          minor: ${{ github.event.inputs.minor || false }}
+          patch: ${{ github.event.inputs.patch || true }} # Default to patch increment
+          tag_prefix: "v" # Use "v" prefix for tags
+          initial_version: "v1.0.0"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Git Tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag ${{ steps.bump_version.outputs.new_version }}
+          git push origin ${{ steps.bump_version.outputs.new_version }}
+
       - name: Create GitHub Release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ github.run_number }}
-          release_name: "Release v${{ github.run_number }}"
+          tag_name: ${{ steps.bump_version.outputs.new_version }}
+          release_name: "Release ${{ steps.bump_version.outputs.new_version }}"
           body: |
             Automated release from GitHub Actions.
             Includes builds for Windows and Linux.
           draft: false
           prerelease: false
-      - name: run_echo
-        run: pwd && ls ./release-assets/windows && ls ./release-assets/linux
-      - name: Zip Windows artifact
-        run: |
-          cd ./release-assets/windows
-          zip -r attest-win.zip *
-      - name: Zip Linux artifact
-        run: |
-          cd ./release-assets/linux
-          zip -r attest-lin.zip *
-      - name: run_echo
-        run: pwd && ls ./release-assets/windows && ls ./release-assets/linux
+
+      - name: Generate Release Notes
+        uses: release-drafter/release-drafter@v5
+        with:
+          config-name: .github/release-drafter.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload Windows artifact to release
         uses: actions/upload-release-asset@v1
         env:
@@ -95,6 +126,7 @@ jobs:
           asset_path: ./release-assets/windows/attest-win.zip
           asset_name: attest-win.zip
           asset_content_type: application/zip
+
       - name: Upload Linux artifact to release
         uses: actions/upload-release-asset@v1
         env:

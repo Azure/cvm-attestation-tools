@@ -1,0 +1,16 @@
+name-template: 'Release v{{version}}'
+tag-template: 'v{{version}}'
+categories:
+  - title: 🚀 Features
+    labels:
+      - feature
+  - title: 🐛 Bug Fixes
+    labels:
+      - bug
+  - title: 🧹 Code Refactoring
+    labels:
+      - refactor
+change-template: '- {{message}}'
+template: |
+  ## Changes
+  {{CHANGELOG}}
