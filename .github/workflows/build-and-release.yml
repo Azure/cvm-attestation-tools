@@ -4,6 +4,11 @@ on:
     branches:
       - github-build
 
+permissions:
+  contents: write  # Required for creating releases and uploading assets
+  actions: read    # Default read access for actions
+  packages: write  # Optional, if you are dealing with packages
+
 jobs:
   Build-On-Windows:
     runs-on: windows-2022
