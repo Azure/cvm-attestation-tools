@@ -81,8 +81,8 @@ jobs:
         id: get_tag
         run: |
           git fetch --tags
-          latest_tag=$(git tag --sort=-creatordate | grep '^v' | head -n 1)
-          echo "latest_tag=${latest_tag:-v0.0.0}" >> $GITHUB_OUTPUT
+          latest_tag=$(git tag --sort=-creatordate | head -n 1 | sed 's/^v//')
+          echo "latest_tag=${latest_tag:-0.0.0}" >> $GITHUB_OUTPUT
 
       - name: Bump Patch Version
         id: bump
