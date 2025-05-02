@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     branches:
-      - github-build
+      - main
   workflow_dispatch:
   pull_request_target:
 
