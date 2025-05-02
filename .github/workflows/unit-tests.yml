@@ -1,5 +1,5 @@
 name: Run Unit Tests
-on: [push, pull_request]
+on: [push]
 
 jobs:
   Run-Pytests-Linux:
