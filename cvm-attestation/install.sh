@@ -29,10 +29,26 @@ retry_command sudo apt-get update
 echo "Installing tpm2-tools and Python..."
 retry_command sudo apt-get install -y tpm2-tools python3 python3-pip
 
+# Detect Ubuntu version
+UBUNTU_VERSION=$(lsb_release -sr)
+
+#
+# Set pip install command based on Ubuntu version.
+# For Ubuntu 24.04, packages are managed different and pip upgrade is not supported.
+# ERROR: Cannot uninstall pip 24.0, RECORD file not found. Hint: The package was installed by debian.
+#
+# TODO: Remove this conditional by packaging the tool using a virtual environment or pipx solution.
+#
+if [[ "$UBUNTU_VERSION" == "24.04" ]]; then
+    PIP_INSTALL_CMD="sudo -H pip3 install --break-system-packages"
+else
+    PIP_INSTALL_CMD="sudo -H pip3 install"
+    retry_command $PIP_INSTALL_CMD --upgrade pip
+fi
+
 # Install Python packages
-echo "Installing Python requirements..."
-retry_command sudo -H pip3 install --upgrade pip
-retry_command sudo -H pip3 install -r requirements.txt
+echo "Installing Python requirements using $PIP_INSTALL_CMD..."
+retry_command $PIP_INSTALL_CMD -r requirements.txt
 
 # Install CLI tool
 echo "Installing CLI tool..."

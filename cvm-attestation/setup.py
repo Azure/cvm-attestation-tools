@@ -9,13 +9,14 @@ setup(
     name='attest',
     version='0.1',
     packages=find_packages(),
-    py_modules=['attest', 'tpm_wrapper', 'AttestationClient', 'AttestationTypes'],  # Include the attest module
+    py_modules=['attest', 'tpm_wrapper', 'AttestationClient', 'AttestationTypes', 'read_report', 'snp', 'deserialize_tdx_v4'],
     install_requires=[
         'Click',
     ],
     entry_points={
         'console_scripts': [
             'attest = attest:attest',
+            'read_report=read_report:read_report',
         ],
     }
 )

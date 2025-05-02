@@ -62,42 +62,56 @@ class MAAProvider(IAttestationProvider):
     self.endpoint = endpoint
 
 
-  def attest_platform(self, evidence, runtime_data):
+  def _send_attestation_request(self, payload):
     """
-    Verfies the Hardware Evidence provided by the Attester
+    Sends an attestation request to the provider with retries and exponential backoff.
     """
-
-    # Sends request to MAA using exponential backoff to handle
-    # any transient network issue.
     max_retries = 5
-    retries = 0
     backoff_factor = 1
+    retries = 0
+
     while retries < max_retries:
       try:
-        payload = self.create_payload(evidence, runtime_data)
-
         self.log.info("Sending attestation request to provider...")
 
-        # Sends request to MAA for attesting the guest
         response = requests.post(
           self.endpoint,
           data=json.dumps(payload),
           headers=DEFAULT_HEADERS
         )
 
-        # Check the response from the server if there is an error
-        # we retry until all retries have been exhausted
         if response.status_code == 200:
           self.log.info("Received token from attestation provider")
           response_json = json.loads(response.text)
           encoded_token = response_json['token']
 
           return encoded_token
+        elif response.status_code == 400:
+          self.log.error(
+            f"Failed to verify evidence due to invalid collateral, error: {response.text}"
+          )
+          return None
+        elif response.status_code == 429:
+          self.log.warning(f"Too many requests, error: {response.text}")
+          retries += 1
+          if retries < max_retries:
+            retry_after = response.headers.get('Retry-After')
+            if retry_after:
+              sleep_time = int(retry_after)
+              self.log.info(f"Retrying in {sleep_time} seconds...")
+              time.sleep(sleep_time)
+            else:
+              sleep_time = backoff_factor * (2 ** (retries - 1))
+              self.log.info(f"Retrying in {sleep_time} seconds...")
+              time.sleep(sleep_time)
+          else:
+            raise AttestationProviderException(
+              f"Unexpected Error. Status code: {response.status_code}, error: {response.text}"
+            )
         else:
           self.log.error(
             f"Failed to verify evidence, status code: {response.status_code}, error: {response.text}"
           )
-
           retries += 1
           if retries < max_retries:
             sleep_time = backoff_factor * (2 ** (retries - 1))
@@ -107,9 +121,9 @@ class MAAProvider(IAttestationProvider):
             raise AttestationProviderException(
               f"Unexpected status code: {response.status_code}, error: {response.text}"
             )
+
       except RequestException as e:
         self.log.error(f"Request failed with an exception: {e}")
-
         retries += 1
         if retries < max_retries:
           sleep_time = backoff_factor * (2 ** (retries - 1))
@@ -123,64 +137,18 @@ class MAAProvider(IAttestationProvider):
             f"Request failed after all retries have been exhausted. Error: {e}"
           )
 
+  def attest_platform(self, evidence, runtime_data):
+    """
+    Verifies the Hardware Evidence provided by the Attester.
+    """
+    payload = self.create_payload(evidence, runtime_data)
+    return self._send_attestation_request(payload)
 
   def attest_guest(self, evidence):
     """
-    Verfies the Guest and Hardware Evidence provided by the Attester
+    Verifies the Guest and Hardware Evidence provided by the Attester.
     """
-
-    # Sends request to MAA using exponential backoff to handle
-    # any transient network issue
-    max_retries = 5
-    retries = 0
-    backoff_factor = 1
-    while retries < max_retries:
-      try:
-        self.log.info("Sending attestation request to provider...")
-
-        # Sends request to MAA for attesting the guest
-        response = requests.post(
-          self.endpoint,
-          data=json.dumps(evidence),
-          headers=DEFAULT_HEADERS
-        )
-
-        # Check the response from the server
-        if response.status_code == 200:
-          self.log.info("Received token from attestation provider")
-          response_json = json.loads(response.text)
-          encoded_token = response_json['token']
-
-          return encoded_token
-        else:
-          self.log.error(
-            f"Failed to verify evidence, status code: {response.status_code}, error: {response.text}"
-          )
-
-          retries += 1
-          if retries < max_retries:
-            sleep_time = backoff_factor * (2 ** (retries - 1))
-            self.log.info(f"Retrying in {sleep_time} seconds...")
-            time.sleep(sleep_time)
-          else:
-            raise AttestationProviderException(
-              f"Unexpected status code: {response.status_code}, error: {response.text}"
-            )
-      except RequestException as e:
-        self.log.error(f"Request failed with an exception: {e}")
-
-        retries += 1
-        if retries < max_retries:
-          sleep_time = backoff_factor * (2 ** (retries - 1))
-          self.log.info(f"Retrying in {sleep_time} seconds...")
-          time.sleep(sleep_time)
-        else:
-          self.log.error(
-            f"Request failed after all retries have been exhausted. Error: {e}"
-          )
-          raise AttestationProviderException(
-            f"Request failed after all retries have been exhausted. Error: {e}"
-          )
+    return self._send_attestation_request(evidence)
 
 
   def print_snp_platform_claims(self, encoded_token):
@@ -196,6 +164,8 @@ class MAAProvider(IAttestationProvider):
         self.log.info(f"SNP Microcode SVN: {claims['x-ms-sevsnpvm-microcode-svn']}")
         self.log.info(f"SNP Firmware SVN: {claims['x-ms-sevsnpvm-snpfw-svn']}")
         self.log.info(f"SNP TEE SVN: {claims['x-ms-sevsnpvm-tee-svn']}")
+        self.log.info(f"Report Data: {claims['x-ms-sevsnpvm-reportdata']}")
+        self.log.info(f"User Claims Digest: {claims['x-ms-runtime']['user-data']}")
         self.log.info("Attested Platform Successfully!!")
     except Exception as e:
       raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
@@ -222,12 +192,24 @@ class MAAProvider(IAttestationProvider):
         self.log.info(f"TCB Status: {claims['attester_tcb_status']}")
         self.log.info(f"TCB SVN : {claims['tdx_tee_tcb_svn']}")
         self.log.info(f"TPM Persisted: {claims['x-ms-runtime']['vm-configuration']['tpm-persisted']}")
+        self.log.info(f"Report Data: {claims['tdx_report_data']}")
+        self.log.info(f"User Claims Digest: {claims['x-ms-runtime']['user-data']}")
         self.log.info("Attested Platform Successfully!!")
     except Exception as e:
       raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
 
 
   def print_guest_claims(self, encoded_token):
+    if self.isolation == IsolationType.TDX:
+      self.print_tdx_guest_claims(encoded_token)
+    elif self.isolation == IsolationType.SEV_SNP:
+      self.print_snp_guest_claims(encoded_token)
+    else:
+      raise ValueError(
+        f"Invalid Isolation Type. Valid Types: {IsolationType.TDX}, {IsolationType.SEV_SNP}"
+      )
+
+  def print_snp_guest_claims(self, encoded_token):
     try:
       claims = jwt.decode(encoded_token, options={"verify_signature": False})
 
@@ -240,10 +222,30 @@ class MAAProvider(IAttestationProvider):
         self.log.info(f"SNP Microcode SVN: {claims['x-ms-isolation-tee']['x-ms-sevsnpvm-microcode-svn']}")
         self.log.info(f"SNP Firmware SVN: {claims['x-ms-isolation-tee']['x-ms-sevsnpvm-snpfw-svn']}")
         self.log.info(f"SNP TEE SVN: {claims['x-ms-isolation-tee']['x-ms-sevsnpvm-tee-svn']}")
+        self.log.info(f"Report Data: {claims['x-ms-isolation-tee']['x-ms-sevsnpvm-reportdata']}")
+        self.log.info(f"User Claims Digest: {claims['x-ms-isolation-tee']['x-ms-runtime']['user-data']}")
         self.log.info("Attested Guest Successfully!!")
     except Exception as e:
       raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
+    
+  def print_tdx_guest_claims(self, encoded_token):
+    try:
+      claims = jwt.decode(encoded_token, options={"verify_signature": False})
 
+      if claims['x-ms-isolation-tee']['x-ms-compliance-status'] == 'azure-compliant-cvm':
+        self.log.info(f"Claims:")
+        self.log.info(f"Attestation Type: {claims['x-ms-isolation-tee']['x-ms-attestation-type']}")
+        self.log.info(f"Status: {claims['x-ms-isolation-tee']['x-ms-compliance-status']}")
+        self.log.info(f"MR SEAM: {claims['x-ms-isolation-tee']['tdx_mrseam']}")
+        self.log.info(f"MR TD: {claims['x-ms-isolation-tee']['tdx_report_data']}")
+        self.log.info(f"SEAM SVN: {claims['x-ms-isolation-tee']['tdx_seamsvn']}")
+        self.log.info(f"TD Attributes: {claims['x-ms-isolation-tee']['tdx_td_attributes']}")
+        self.log.info(f"TEE TCB SVN: {claims['x-ms-isolation-tee']['tdx_tee_tcb_svn']}")
+        self.log.info(f"Report Data: {claims['x-ms-isolation-tee']['tdx_report_data']}")
+        self.log.info(f"User Claims Digest: {claims['x-ms-isolation-tee']['x-ms-runtime']['user-data']}")
+        self.log.info("Attested Guest Successfully!!")
+    except Exception as e:
+      raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
 
   def create_payload(self, evidence: str, runtimes_data: str):
     # Check if evidence and runtimes_data are strings
