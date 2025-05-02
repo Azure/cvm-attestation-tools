@@ -1,0 +1,2 @@
+[tool.pytest.ini_options]
+addopts = "--ignore=external/TSS_MSR/test/Test_Azure_IoT_Provisioning.py"
