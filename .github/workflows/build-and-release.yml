@@ -93,7 +93,6 @@ jobs:
           echo "v${next_version}" > VERSION.txt
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git commit -am 'chore: bump version to v'${next_version}
           git tag v${next_version}
           git push origin v${next_version}
           git push
