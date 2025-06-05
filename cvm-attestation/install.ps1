@@ -12,7 +12,7 @@ function Install-Python {
     choco install -y python --version 3.10.2
 
     $pythonPath = "C:\Python310"
-    $env:PATH += ";$pythonPath"
+    $env:PATH = "$pythonPath;" + $env:PATH
 
     python.exe -m pip install --upgrade pip
     python.exe -m pip install --upgrade setuptools
@@ -41,7 +41,7 @@ function Build-And-Install {
 
     # Update PATH for attest CLI
     $attestPath = "C:\Python310\Scripts"
-    $env:PATH += ";$attestPath"
+    $env:PATH = "$attestPath;" + $env:PATH
 
     Write-Output "Building and Installing...Done"
 }
