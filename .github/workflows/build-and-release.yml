@@ -23,12 +23,13 @@ jobs:
           cd ${{ github.workspace }}\cvm-attestation
           .\install.ps1
           pip install pyinstaller
-          pyinstaller .\attest.py
+          pyinstaller --onefile .\attest.py
+          pyinstaller --onefile .\read_report.py
           cp ${{ github.workspace }}\cvm-attestation\*.json ${{ github.workspace }}\cvm-attestation\dist\attest\
       - uses: actions/upload-artifact@v4
         with:
           name: attest-win
-          path: ${{ github.workspace }}\cvm-attestation\dist\attest\*
+          path: ${{ github.workspace }}\cvm-attestation\dist\*
 
   Build-On-Linux:
     runs-on: ubuntu-22.04
@@ -41,12 +42,13 @@ jobs:
           cd ${{ github.workspace }}/cvm-attestation
           ./install.sh
           sudo pip install pyinstaller
-          sudo pyinstaller ./attest.py
+          sudo pyinstaller --onefile ./attest.py
+          sudo pyinstaller --onefile ./read_report.py
           sudo cp ${{ github.workspace }}/cvm-attestation/*.json ${{ github.workspace }}/cvm-attestation/dist/attest/
       - uses: actions/upload-artifact@v4
         with:
           name: attest-lin
-          path: ${{ github.workspace }}/cvm-attestation/dist/attest/*
+          path: ${{ github.workspace }}/cvm-attestation/dist/*
 
   Create-Release:
     runs-on: ubuntu-22.04
