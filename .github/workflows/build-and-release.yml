@@ -50,6 +50,7 @@ jobs:
 
   Create-Release:
     runs-on: ubuntu-22.04
+    if: github.event_name != 'pull_request_target'  # Skip on PR target events
     needs: [Build-On-Windows, Build-On-Linux]
     steps:
       - name: Check out repository code
