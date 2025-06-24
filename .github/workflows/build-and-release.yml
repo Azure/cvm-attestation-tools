@@ -81,8 +81,9 @@ jobs:
         id: get_tag
         run: |
           git fetch --tags
-          latest_tag=$(git tag --sort=-creatordate | head -n 1 | sed 's/^v//')
+          latest_tag=$(git tag -l 'v[0-9]*' --sort=-version:refname | head -n 1 | sed 's/^v//')
           echo "latest_tag=${latest_tag:-0.0.0}" >> $GITHUB_OUTPUT
+          echo "Latest tag: ${latest_tag:-0.0.0}"
 
       - name: Bump Patch Version
         id: bump
@@ -91,6 +92,7 @@ jobs:
           next_version=$(python -c "import semver; print(semver.bump_patch('${{ steps.get_tag.outputs.latest_tag }}'))")
           echo "next_version=${next_version}" >> $GITHUB_OUTPUT
           echo "v${next_version}" > VERSION.txt
+          echo "Next version: ${next_version}"
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git tag v${next_version}
