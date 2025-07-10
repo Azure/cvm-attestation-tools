@@ -224,8 +224,8 @@ class MAAProvider(IAttestationProvider):
         self.log.info(f"SNP TEE SVN: {claims['x-ms-isolation-tee']['x-ms-sevsnpvm-tee-svn']}")
         self.log.info(f"Report Data: {claims['x-ms-isolation-tee']['x-ms-sevsnpvm-reportdata']}")
         self.log.info(f"User Claims Digest: {claims['x-ms-isolation-tee']['x-ms-runtime']['user-data']}")
-        # if 'x-ms-azurevm-os-provisioning' in claims:
-        #   self.log.info(f"OS provisioning claims: {claims['x-ms-azurevm-os-provisioning']}")
+        if 'x-ms-azurevm-os-provisioning' in claims:
+          self.log.info(f"OS provisioning claims: {claims['x-ms-azurevm-os-provisioning']}")
         self.log.info("Attested Guest Successfully!!")
     except Exception as e:
       raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
@@ -245,8 +245,8 @@ class MAAProvider(IAttestationProvider):
         self.log.info(f"TEE TCB SVN: {claims['x-ms-isolation-tee']['tdx_tee_tcb_svn']}")
         self.log.info(f"Report Data: {claims['x-ms-isolation-tee']['tdx_report_data']}")
         self.log.info(f"User Claims Digest: {claims['x-ms-isolation-tee']['x-ms-runtime']['user-data']}")
-        # if 'x-ms-azurevm-os-provisioning' in claims:
-        #   self.log.info(f"OS provisioning claims: {claims['x-ms-azurevm-os-provisioning']}")
+        if 'x-ms-azurevm-os-provisioning' in claims:
+          self.log.info(f"OS provisioning claims: {claims['x-ms-azurevm-os-provisioning']}")
         self.log.info("Attested Guest Successfully!!")
     except Exception as e:
       raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
