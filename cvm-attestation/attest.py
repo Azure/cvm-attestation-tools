@@ -20,6 +20,7 @@ def parse_config_file(filename):
 IsolationTypeLookup = {
   'maa_tdx': IsolationType.TDX,
   'maa_snp': IsolationType.SEV_SNP,
+  'maa_trusted_launch': IsolationType.TRUSTED_LAUNCH,
   'ita': IsolationType.TDX,
   'default': IsolationType.UNDEFINED
 }
@@ -28,6 +29,7 @@ IsolationTypeLookup = {
 AttestationProviderLookup = {
   'maa_tdx': Verifier.MAA,
   'maa_snp': Verifier.MAA,
+  'maa_trusted_launch': Verifier.MAA,
   'ita': Verifier.ITA,
   'default': Verifier.UNDEFINED
 }

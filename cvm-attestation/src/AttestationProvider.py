@@ -178,7 +178,7 @@ class MAAProvider(IAttestationProvider):
       self.print_snp_platform_claims(encoded_token)
     else:
       raise ValueError(
-        f"Invalid Isolation Type. Valid Types: {IsolationType.TDX}, {IsolationType.SEV_SNP}"
+        f"Invalid Isolation Type. print_platform_claims - Valid Types: {IsolationType.TDX}, {IsolationType.SEV_SNP}"
       )
 
 
@@ -204,10 +204,50 @@ class MAAProvider(IAttestationProvider):
       self.print_tdx_guest_claims(encoded_token)
     elif self.isolation == IsolationType.SEV_SNP:
       self.print_snp_guest_claims(encoded_token)
+    elif self.isolation == IsolationType.TRUSTED_LAUNCH:
+      self.print_trusted_launch_guest_claims(encoded_token)
     else:
       raise ValueError(
-        f"Invalid Isolation Type. Valid Types: {IsolationType.TDX}, {IsolationType.SEV_SNP}"
+        f"Invalid Isolation Type. print_guest_claims - Valid Types: {IsolationType.TDX}, {IsolationType.SEV_SNP} and {IsolationType.TRUSTED_LAUNCH}"
       )
+
+  def print_trusted_launch_guest_claims(self, encoded_token):
+    try:
+        claims = jwt.decode(encoded_token, options={"verify_signature": False})
+        
+        self.log.info(f"Claims:")
+        self.log.info(f"Attestation Type: {claims.get('x-ms-attestation-type', 'N/A')}")
+        self.log.info(f"Protocol Version: {claims.get('x-ms-azurevm-attestation-protocol-ver', 'N/A')}")
+        self.log.info(f"VM ID: {claims.get('x-ms-azurevm-vmid', 'N/A')}")
+        
+        # OS Information
+        self.log.info(f"OS Type: {claims.get('x-ms-azurevm-ostype', 'N/A')}")
+        self.log.info(f"OS Distro: {claims.get('x-ms-azurevm-osdistro', 'N/A')}")
+        self.log.info(f"OS Version: {claims.get('x-ms-azurevm-osversion-major', 'N/A')}.{claims.get('x-ms-azurevm-osversion-minor', 'N/A')}")
+        self.log.info(f"OS Build: {claims.get('x-ms-azurevm-osbuild', 'N/A')}")
+        
+        # Security Configuration
+        self.log.info(f"Secure Boot: {claims.get('secureboot', 'N/A')}")
+        self.log.info(f"Boot Debug Enabled: {claims.get('x-ms-azurevm-bootdebug-enabled', 'N/A')}")
+        self.log.info(f"Kernel Debug Enabled: {claims.get('x-ms-azurevm-kerneldebug-enabled', 'N/A')}")
+        self.log.info(f"Hypervisor Debug Enabled: {claims.get('x-ms-azurevm-hypervisordebug-enabled', 'N/A')}")
+        self.log.info(f"Test Signing Enabled: {claims.get('x-ms-azurevm-testsigning-enabled', 'N/A')}")
+        self.log.info(f"Flight Signing Enabled: {claims.get('x-ms-azurevm-flightsigning-enabled', 'N/A')}")
+        self.log.info(f"Debuggers Disabled: {claims.get('x-ms-azurevm-debuggersdisabled', 'N/A')}")
+        
+        # Validation Status
+        self.log.info(f"DB Validated: {claims.get('x-ms-azurevm-dbvalidated', 'N/A')}")
+        self.log.info(f"DBX Validated: {claims.get('x-ms-azurevm-dbxvalidated', 'N/A')}")
+        self.log.info(f"Default Secure Boot Keys Validated: {claims.get('x-ms-azurevm-default-securebootkeysvalidated', 'N/A')}")
+        
+        # PCR Information
+        attested_pcrs = claims.get('x-ms-azurevm-attested-pcrs', [])
+        self.log.info(f"Attested PCRs: {attested_pcrs}")
+        
+        self.log.info("Attested Trusted Launch Guest Successfully!!")
+        
+    except Exception as e:
+        raise AttestationProviderException(f'Exception while decoding jwt. Exception: {e}')
 
   def print_snp_guest_claims(self, encoded_token):
     try:
