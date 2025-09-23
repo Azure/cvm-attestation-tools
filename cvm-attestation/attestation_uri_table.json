@@ -52,5 +52,7 @@
   "West India": "https://sharedwin.win.attest.azure.net",
   "West US": "https://sharedwus.wus.attest.azure.net",
   "West US 2": "https://sharedwus2.wus2.attest.azure.net",
-  "West US 3": "https://sharedwus3.wus3.attest.azure.net"
+  "West US 3": "https://sharedwus3.wus3.attest.azure.net",
+  "Virginia": "https://sharedugv.ugv.attest.azure.us",
+  "Arizona": "https://shareduga.uga.attest.azure.us"
 }
