@@ -5,7 +5,10 @@ from src.Logger import Logger
 from snp import AttestationReport
 from src.ImdsClient import ImdsClient
 from src.Encoder import Encoder
-from deserialize_tdx_v4 import deserialize_td_quotev4, print_td_quotev4
+import json
+from src.Quote import Quote
+from src.QuoteV4 import QuoteV4
+from src.QuoteV5 import QuoteV5
 
 
 DEFAULT_ENDPOINT = 'https://sharedweu.weu.attest.azure.net/attest/SevSnpVm?api-version=2022-08-01'
@@ -71,9 +74,22 @@ def handle_hardware_report(report_type, output_path, attestation_client):
     logger.info("Got attestation report successfully!")
   elif report_type == 'td_quote':
     try:
-      deserialized_td_quote = deserialize_td_quotev4(evidence.hardware_report)
-      print_td_quotev4(deserialized_td_quote)
-      
+      quote = Quote(evidence.hardware_report)
+      print(quote)
+      logger.info("Got TD quote successfully!")
+
+      # Store hardware report
+      file_path = 'report.bin'
+      with open(file_path, 'wb') as file:
+        file.write(evidence.hardware_report)
+      logger.info(f"Output successfully written to: {file_path}")
+
+      # Stores the runtime data in a json file
+      json_data = json.loads(evidence.runtime_data)
+      with open('runtime_data.json', 'w') as file:
+        json.dump(json_data, file, indent=2)
+        logger.info(f"Output successfully written to: 'runtime_data.json'")
+    
     except UnicodeDecodeError:
       logger.error("Failed to decode the TD quote header. Ensure the report is valid.")
       return
