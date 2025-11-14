@@ -74,8 +74,8 @@ def handle_hardware_report(report_type, output_path, attestation_client):
     logger.info("Got attestation report successfully!")
   elif report_type == 'td_quote':
     try:
-      quote = Quote()
-      print(quote.deserialize(evidence.hardware_report))
+      quote = Quote.from_bytes(evidence.hardware_report)
+      print(quote)
       logger.info("Got TD quote successfully!")
 
       # Store hardware report
