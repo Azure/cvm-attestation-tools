@@ -56,7 +56,6 @@ class ReportParser:
       list.append(report[i])
 
     request_type = int.from_bytes(bytes(list), byteorder='little', signed=False)
-    print(f"Request type num: {request_type}")
     return REPORT_TYPE[request_type]
 
 

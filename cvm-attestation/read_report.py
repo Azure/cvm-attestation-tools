@@ -20,8 +20,6 @@ def read_report():
   """
   logger = Logger('logger').get_logger()
 
-  logger.info("Attestation started...")
-
   # Initialize attestation client
   client_parameters = AttestationClientParameters(
     endpoint=DEFAULT_ENDPOINT,

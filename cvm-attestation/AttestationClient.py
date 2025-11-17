@@ -139,7 +139,6 @@ class AttestationClient():
       report_type = ReportParser.extract_report_type(hcl_report)
       hw_report = ReportParser.extract_hw_report(hcl_report)
       runtime_data = ReportParser.extract_runtimes_data(hcl_report)
-      print(f"Report type: {report_type}")
 
       if report_type == IsolationType.SEV_SNP:
         self.log_snp_report(hw_report)
@@ -158,7 +157,6 @@ class AttestationClient():
       else:
         raise UnsupportedReportTypeException(f"Unsupported report type: {report_type}")
 
-      print(f"Hardware report size: {len(hw_report)} bytes")
       return HardwareEvidence(report_type, hw_report, runtime_data)
     except Exception as e:
       self.log.error(f"Error while reading hardware report. Exception {e}")
@@ -309,7 +307,7 @@ class AttestationClient():
         self.log.info('Attesting Platform Evidence...')
 
         tss_wrapper = TssWrapper(self.log)
-        isolation_type = self.parameters.isolation_type
+
         # Extract Hardware Report and Runtime Data
         hcl_report = tss_wrapper.get_hcl_report(self.parameters.user_claims)
         report_type = ReportParser.extract_report_type(hcl_report)
