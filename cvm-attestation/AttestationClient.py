@@ -201,7 +201,7 @@ class AttestationClient():
         key, key_handle, tpm = tss_wrapper.get_ephemeral_key(os_info.pcr_list)
         tpm_info = TpmInfo(aik_cert, aik_pub, pcr_quote, sig, pcr_values, key)
         tcg_logs = get_measurements(os_info.type)
-        isolation = Isolation(self.parameters.isolation_type, hw_evidence)
+        isolation = Isolation(report_type, hw_evidence)
         param = GuestAttestationParameters(os_info, tcg_logs, tpm_info, isolation)
 
         # Calls attestation provider with the guest evidence
