@@ -17,37 +17,11 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-      - name: Build
+      - name: Build executables
         shell: pwsh
         run: |
           cd ${{ github.workspace }}\cvm-attestation
-          .\install.ps1
-          pip install pyinstaller
-          Write-Host "Building attest.exe..."
-          pyinstaller --onefile --distpath dist --clean .\attest.py
-          Write-Host "Building read_report.exe..."
-          pyinstaller --onefile --distpath dist --clean .\read_report.py
-          Write-Host "Copying JSON configuration files..."
-          cp ${{ github.workspace }}\cvm-attestation\*.json ${{ github.workspace }}\cvm-attestation\dist\
-      - name: Verify builds
-        shell: pwsh
-        run: |
-          cd ${{ github.workspace }}\cvm-attestation\dist
-          Write-Host "Contents of dist directory:"
-          ls
-          if (-not (Test-Path "attest.exe")) { throw "attest.exe not found!" }
-          if (-not (Test-Path "read_report.exe")) { throw "read_report.exe not found!" }
-          Write-Host "✓ Both executables built successfully"
-      - name: Prepare artifact
-        shell: pwsh
-        run: |
-          cd ${{ github.workspace }}\cvm-attestation
-          New-Item -ItemType Directory -Force -Path release
-          Copy-Item dist\attest.exe release\
-          Copy-Item dist\read_report.exe release\
-          Copy-Item *.json release\
-          Write-Host "Release directory contents:"
-          ls release
+          .\build.ps1 -Verbose
       - uses: actions/upload-artifact@v4
         with:
           name: attest-win
@@ -58,37 +32,12 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-      - name: Build
+      - name: Build executables
         shell: bash
         run: |
           cd ${{ github.workspace }}/cvm-attestation
-          ./install.sh
-          sudo pip install pyinstaller
-          echo "Building attest..."
-          sudo pyinstaller --onefile --distpath dist --clean ./attest.py
-          echo "Building read_report..."
-          sudo pyinstaller --onefile --distpath dist --clean ./read_report.py
-          echo "Copying JSON configuration files..."
-          sudo cp ${{ github.workspace }}/cvm-attestation/*.json ${{ github.workspace }}/cvm-attestation/dist/
-      - name: Verify builds
-        shell: bash
-        run: |
-          cd ${{ github.workspace }}/cvm-attestation/dist
-          echo "Contents of dist directory:"
-          ls -la
-          if [ ! -f "attest" ]; then echo "ERROR: attest not found!" && exit 1; fi
-          if [ ! -f "read_report" ]; then echo "ERROR: read_report not found!" && exit 1; fi
-          echo "✓ Both executables built successfully"
-      - name: Prepare artifact
-        shell: bash
-        run: |
-          cd ${{ github.workspace }}/cvm-attestation
-          mkdir -p release
-          cp dist/attest release/
-          cp dist/read_report release/
-          cp *.json release/
-          echo "Release directory contents:"
-          ls -la release
+          chmod +x build.sh
+          sudo ./build.sh --verbose
       - uses: actions/upload-artifact@v4
         with:
           name: attest-lin
