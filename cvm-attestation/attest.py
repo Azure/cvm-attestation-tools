@@ -101,7 +101,12 @@ def attest(c, t, s):
 
   # Build attestation client parameters
   provider = AttestationProviderLookup.get(provider_tag, AttestationProviderLookup['default'])
-  client_parameters = AttestationClientParameters(endpoint, provider, isolation_type, claims, api_key)
+  client_parameters = AttestationClientParameters(
+    endpoint=endpoint,
+    verifier=provider,
+    claims=claims,
+    api_key=api_key
+  )
 
   # Attest based on user configuration
   attestation_client = AttestationClient(logger, client_parameters)
