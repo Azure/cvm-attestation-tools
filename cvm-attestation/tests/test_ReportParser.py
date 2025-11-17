@@ -10,7 +10,6 @@ from src.ReportParser import ReportParser
 def read_hcl_report():
     current_dir = os.path.dirname(__file__)
     file_path = os.path.join(current_dir, "report.bin")
-    print(file_path)
     file = open(file_path,"rb")
     hcl_report = file.read()
     file.close()

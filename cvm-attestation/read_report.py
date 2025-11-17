@@ -3,12 +3,8 @@ from AttestationClient import AttestationClient, AttestationClientParameters, Ve
 from src.Isolation import IsolationType
 from src.Logger import Logger
 from snp import AttestationReport
-from src.ImdsClient import ImdsClient
-from src.Encoder import Encoder
 import json
 from src.Quote import Quote
-from src.QuoteV4 import QuoteV4
-from src.QuoteV5 import QuoteV5
 
 
 DEFAULT_ENDPOINT = 'https://sharedweu.weu.attest.azure.net/attest/SevSnpVm?api-version=2022-08-01'

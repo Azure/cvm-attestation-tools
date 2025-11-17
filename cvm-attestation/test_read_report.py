@@ -5,11 +5,9 @@
 
 import pytest
 import json
-import os
-from unittest.mock import MagicMock, Mock, patch, mock_open, call
-from click.testing import CliRunner
-from read_report import read_report, handle_hardware_report
-from AttestationClient import AttestationClient, HardwareEvidence, AttestationClientParameters, Verifier
+from unittest.mock import MagicMock, patch, mock_open
+from read_report import handle_hardware_report
+from AttestationClient import AttestationClient, HardwareEvidence
 from src.Isolation import IsolationType
 
 

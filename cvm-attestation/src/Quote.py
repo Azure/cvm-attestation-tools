@@ -4,9 +4,7 @@
 # Licensed under the MIT license.
 
 from abc import ABC, abstractmethod
-import sys
 from typing import Optional
-from construct import Struct, Int16ul, Bytes
 
 
 class Quote(ABC):
@@ -57,7 +55,7 @@ class Quote(ABC):
     pass
   
   @abstractmethod
-  def deserialize(cls, data: bytes) -> Optional['Quote']:
+  def deserialize(self, data: bytes) -> Optional['Quote']:
     """
     Deserializes raw binary data into the appropriate Quote subclass.
     :param data: Raw binary quote data

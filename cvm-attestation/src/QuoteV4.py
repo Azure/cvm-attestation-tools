@@ -10,8 +10,8 @@ from construct import Struct, Int16ul, Int32ul, Int64ul, Bytes, this
 
 class QuoteV4(Quote):
   """TD Quote Version 4 implementation."""
-  
-	# Class-level struct definitions
+
+  # Class-level struct definitions
   HEADER_STRUCT = Struct(
     "version" / Int16ul,
     "attestation_key_type" / Int16ul,
