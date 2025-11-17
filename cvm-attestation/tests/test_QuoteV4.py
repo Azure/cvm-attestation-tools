@@ -319,9 +319,8 @@ class TestQuoteV4WithRealQuote:
   def read_real_quote(self):
     current_dir = os.path.dirname(__file__)
     file_path = os.path.join(current_dir, "td_quote_v4.dat")
-    file = open(file_path,"rb")
-    td_quote = file.read()
-    file.close()
+    with open(file_path, "rb") as file:
+      td_quote = file.read()
 
     return td_quote
   
