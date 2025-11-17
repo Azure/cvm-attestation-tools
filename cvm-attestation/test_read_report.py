@@ -353,31 +353,6 @@ class TestHandleHardwareReportFileOperations:
       )
 
 
-class TestReadReportCLI:
-  """Tests for the read_report CLI command."""
-  
-  @patch('read_report.AttestationClient')
-  @patch('read_report.AttestationClientParameters')
-  @patch('read_report.Logger')
-  @patch('read_report.handle_hardware_report')
-  def test_read_report_cli_execution_fails_due_to_undefined_variable(
-      self, mock_handle, mock_logger_class, mock_params_class, mock_client_class):
-    """
-    Test that the CLI fails due to undefined variable 't' in read_report.py line 29.
-    This is a known bug where the code references 't' which is not defined.
-    """
-    # Setup mocks
-    mock_logger = MagicMock()
-    mock_logger_class.return_value.get_logger.return_value = mock_logger
-    
-    # Run CLI command
-    runner = CliRunner()
-    result = runner.invoke(read_report)
-    
-    # Verify the CLI failed due to the undefined variable 't'
-    assert result.exit_code == 1
-    assert "NameError" in result.output or "name 't' is not defined" in str(result.exception)
-
 
 class TestHardwareEvidenceStructure:
   """Tests for the HardwareEvidence data structure used in tests."""

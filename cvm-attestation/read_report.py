@@ -26,7 +26,7 @@ def read_report():
   client_parameters = AttestationClientParameters(
     DEFAULT_ENDPOINT,
     Verifier.MAA,
-    IsolationType.SEV_SNP if t == 'snp_report' else IsolationType.TDX,
+    IsolationType.UNDEFINED,
     ''
   )
   attestation_client = AttestationClient(logger, client_parameters)
