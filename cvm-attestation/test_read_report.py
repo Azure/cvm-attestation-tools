@@ -41,9 +41,7 @@ def snp_hardware_evidence():
       "key": "test_key_data"
     }]
   }).encode()
-  evidence = HardwareEvidence('snp', hardware_report, runtime_data)
-  # Add report_type property to work around bug in read_report.py that uses report_type instead of type
-  evidence.report_type = evidence.type
+  evidence = HardwareEvidence(IsolationType.SEV_SNP, hardware_report, runtime_data)
   return evidence
 
 
@@ -102,9 +100,7 @@ def tdx_v4_hardware_evidence():
     }]
   }).encode()
   
-  evidence = HardwareEvidence('tdx', hardware_report, runtime_data)
-  # Add report_type property to work around bug in read_report.py that uses report_type instead of type
-  evidence.report_type = evidence.type
+  evidence = HardwareEvidence(IsolationType.TDX, hardware_report, runtime_data)
   return evidence
 
 
@@ -165,8 +161,7 @@ def tdx_v5_hardware_evidence():
     }]
   }).encode()
   
-  evidence = HardwareEvidence('tdx', hardware_report, runtime_data)
-  # Add report_type property to work around bug in read_report.py that uses report_type instead of type
+  evidence = HardwareEvidence(IsolationType.TDX, hardware_report, runtime_data)
   return evidence
 
 
@@ -199,7 +194,7 @@ class TestHandleHardwareReportSNP:
       
       # Verify logger messages
       mock_attestation_client.log.info.assert_any_call("Reading hardware report...")
-      mock_attestation_client.log.info.assert_any_call("Hardware report type: snp")
+      mock_attestation_client.log.info.assert_any_call(f"Hardware report type: {IsolationType.SEV_SNP}")
       mock_attestation_client.log.info.assert_any_call("Got attestation report successfully!")
   
   def test_handle_snp_report_parse_failure(self, mock_attestation_client, snp_hardware_evidence):
@@ -238,7 +233,7 @@ class TestHandleHardwareReportTDX:
       
       # Verify logger messages
       mock_attestation_client.log.info.assert_any_call("Reading hardware report...")
-      mock_attestation_client.log.info.assert_any_call("Hardware report type: tdx")
+      mock_attestation_client.log.info.assert_any_call(f"Hardware report type: {IsolationType.TDX}")
       mock_attestation_client.log.info.assert_any_call("Got TD quote successfully!")
   
   def test_handle_tdx_v5_report_success(self, mock_attestation_client, tdx_v5_hardware_evidence):
@@ -291,15 +286,13 @@ class TestHandleHardwareReportInvalid:
   """Tests for handle_hardware_report with invalid report types."""
   
   def test_handle_invalid_report_type(self, mock_attestation_client):
-    invalid_evidence = HardwareEvidence('invalid', b'\x00' * 100, b'{}')
-    # Add report_type property to work around bug in read_report.py
-    invalid_evidence.report_type = invalid_evidence.type
+    invalid_evidence = HardwareEvidence(IsolationType.UNDEFINED, b'\x00' * 100, b'{}')
     mock_attestation_client.get_hardware_evidence.return_value = invalid_evidence
     
     with pytest.raises(ValueError) as excinfo:
       handle_hardware_report(mock_attestation_client)
     
-    assert "Invalid hardware report type: invalid" in str(excinfo.value)
+    assert "Invalid hardware report type: IsolationType.UNDEFINED" in str(excinfo.value)
 
 
 class TestHandleHardwareReportFileOperations:
@@ -358,7 +351,7 @@ class TestHardwareEvidenceStructure:
   """Tests for the HardwareEvidence data structure used in tests."""
   
   def test_snp_evidence_structure(self, snp_hardware_evidence):
-    assert snp_hardware_evidence.type == 'snp'
+    assert snp_hardware_evidence.type == IsolationType.SEV_SNP
     assert isinstance(snp_hardware_evidence.hardware_report, bytes)
     assert len(snp_hardware_evidence.hardware_report) == 1184
     assert isinstance(snp_hardware_evidence.runtime_data, bytes)
@@ -368,14 +361,14 @@ class TestHardwareEvidenceStructure:
     assert 'keys' in runtime_json
   
   def test_tdx_v4_evidence_structure(self, tdx_v4_hardware_evidence):
-    assert tdx_v4_hardware_evidence.type == 'tdx'
+    assert tdx_v4_hardware_evidence.type == IsolationType.TDX
     assert isinstance(tdx_v4_hardware_evidence.hardware_report, bytes)
     
     # Verify it's a valid v4 quote (version bytes should be 0x04 0x00)
     assert tdx_v4_hardware_evidence.hardware_report[0:2] == b'\x04\x00'
   
   def test_tdx_v5_evidence_structure(self, tdx_v5_hardware_evidence):
-    assert tdx_v5_hardware_evidence.type == 'tdx'
+    assert tdx_v5_hardware_evidence.type == IsolationType.TDX
     assert isinstance(tdx_v5_hardware_evidence.hardware_report, bytes)
     
     # Verify it's a valid v5 quote (version bytes should be 0x05 0x00)

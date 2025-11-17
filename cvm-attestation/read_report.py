@@ -24,10 +24,10 @@ def read_report():
 
   # Initialize attestation client
   client_parameters = AttestationClientParameters(
-    DEFAULT_ENDPOINT,
-    Verifier.MAA,
-    IsolationType.UNDEFINED,
-    ''
+    endpoint=DEFAULT_ENDPOINT,
+    verifier=Verifier.MAA,
+    claims='',
+    api_key=None
   )
   attestation_client = AttestationClient(logger, client_parameters)
 
@@ -46,11 +46,11 @@ def handle_hardware_report(attestation_client):
   logger.info(f"Hardware report type: {evidence.type}")
 
   # make sure that the hardware report type is the expected one
-  if evidence.type not in ['snp', 'tdx']:
+  if evidence.type not in [IsolationType.SEV_SNP, IsolationType.TDX]:
     raise ValueError(f"Invalid hardware report type: {evidence.type}")
 
   # check each individual type
-  if evidence.type == 'snp':
+  if evidence.type == IsolationType.SEV_SNP:
     try:
       # Retrieve and deserialize the SNP report
       report = AttestationReport.deserialize(evidence.hardware_report)
@@ -61,7 +61,7 @@ def handle_hardware_report(attestation_client):
     except Exception as e:
       logger.error(f"Failed to parse the SNP report: {e}")
       return
-  elif evidence.type == 'tdx':
+  elif evidence.type == IsolationType.TDX:
     try:
       quote = Quote.from_bytes(evidence.hardware_report)
       print(quote)

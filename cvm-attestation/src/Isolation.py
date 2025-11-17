@@ -11,9 +11,10 @@ from src.Encoder import Encoder
 
 class IsolationType(Enum):
   UNDEFINED = 0
-  TRUSTED_LAUNCH = 1
+  VBS = 1
   SEV_SNP = 2
-  TDX = 3
+  TRUSTED_LAUNCH = 3
+  TDX = 4
 
 
 class Evidence:
