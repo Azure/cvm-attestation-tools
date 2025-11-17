@@ -369,7 +369,7 @@ class TestQuoteV5EdgeCases:
 class TestQuoteV5WithRealQuote:
   def read_real_quote(self):
     current_dir = os.path.dirname(__file__)
-    file_path = os.path.join(current_dir, "hardware_reports\\td_quote_v5.dat")
+    file_path = os.path.join(current_dir, "td_quote_v5.dat")
     file = open(file_path,"rb")
     td_quote = file.read()
     file.close()
