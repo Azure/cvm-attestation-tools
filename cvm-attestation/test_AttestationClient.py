@@ -8,14 +8,20 @@ from pytest_mock import mocker
 
 
 @pytest.fixture
-def attestation_client(mocker):
+@patch('AttestationClient.TssWrapper')
+@patch('AttestationClient.ReportParser')
+def attestation_client(mock_report_parser, mock_tss_wrapper, mocker):
   # Mock the log object
   log_mock = mocker.Mock()
 
   # Mock the parameters
   parameters_mock = mocker.Mock()
   parameters_mock.user_claims = "mock_user_claims"
-  parameters_mock.isolation_type = IsolationType.SEV_SNP
+
+  # Mock TssWrapper and ReportParser calls during initialization
+  tss_wrapper_instance = mock_tss_wrapper.return_value
+  tss_wrapper_instance.get_hcl_report.return_value = "mock_hcl_report"
+  mock_report_parser.extract_report_type.return_value = IsolationType.SEV_SNP
 
   # Create an instance of AttestationClient with mocked log and parameters
   return AttestationClient(logger=log_mock, parameters=parameters_mock)
@@ -37,7 +43,7 @@ def test_attest_platform_success_snp(
   # Mock methods in TssWrapper and ReportParser
   tss_wrapper_instance = mock_tss_wrapper.return_value
   tss_wrapper_instance.get_hcl_report.return_value = "mock_hcl_report"
-  mock_report_parser.extract_report_type.return_value = "snp"
+  mock_report_parser.extract_report_type.return_value = IsolationType.SEV_SNP
   mock_report_parser.extract_hw_report.return_value = b"mock_hw_report"
   mock_report_parser.extract_runtimes_data.return_value = b"mock_runtime_data"
   
@@ -74,12 +80,10 @@ def test_attest_platform_success_tdx(
   mock_attestation_provider,
   attestation_client):
 
-  attestation_client.parameters.isolation_type = IsolationType.TDX
-
   # Mock methods in TssWrapper and ReportParser
   tss_wrapper_instance = mock_tss_wrapper.return_value
   tss_wrapper_instance.get_hcl_report.return_value = "mock_hcl_report"
-  mock_report_parser.extract_report_type.return_value = "tdx"
+  mock_report_parser.extract_report_type.return_value = IsolationType.TDX
   mock_report_parser.extract_hw_report.return_value = b"mock_hw_report"
   mock_report_parser.extract_runtimes_data.return_value = b"mock_runtime_data"
   
@@ -118,7 +122,7 @@ def test_get_hardware_evidence_success(
   # Mock methods in TssWrapper and ReportParser
   tss_wrapper_instance = mock_tss_wrapper.return_value
   tss_wrapper_instance.get_hcl_report.return_value = "mock_hcl_report"
-  mock_report_parser.extract_report_type.return_value = "snp"
+  mock_report_parser.extract_report_type.return_value = IsolationType.SEV_SNP
   mock_report_parser.extract_hw_report.return_value = b"mock_hw_report"
   mock_report_parser.extract_runtimes_data.return_value = b"mock_runtime_data"
 
@@ -139,13 +143,11 @@ def test_get_hardware_evidence_tdx_successful(
   mock_report_parser,
   mock_tss_wrapper,
   attestation_client):
-  # Set isolation type to TDX
-  attestation_client.parameters.isolation_type = IsolationType.TDX
 
   # Mock methods in TssWrapper and ReportParser
   tss_wrapper_instance = mock_tss_wrapper.return_value
   tss_wrapper_instance.get_hcl_report.return_value = "mock_hcl_report"
-  mock_report_parser.extract_report_type.return_value = "tdx"
+  mock_report_parser.extract_report_type.return_value = IsolationType.TDX
   mock_report_parser.extract_hw_report.return_value = b"mock_hw_report"
   mock_report_parser.extract_runtimes_data.return_value = b"mock_runtime_data"
 
