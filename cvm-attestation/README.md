@@ -9,6 +9,61 @@ Remote Attestation empowers a `relying party`, whether it be the workload owner 
 
 ![Attestation](img/attest.png)
 
+## Download Pre-built Executables
+
+Pre-built standalone executables are available from the [GitHub Releases](https://github.com/Azure/cvm-attestation-tools/releases) page. No Python installation or dependencies required!
+
+### Release Structure
+
+Each release contains two platform-specific archives:
+
+#### Windows Release (`attest-win.zip`)
+```
+attest-win/
+├── attest.exe                    # Attestation CLI tool
+├── read_report.exe               # Hardware report reader
+├── config_snp.json              # SNP with MAA configuration
+├── config_snp_guest.json        # SNP Guest attestation configuration
+├── config_tdx.json              # TDX with MAA configuration
+├── config_tdx_ita.json          # TDX with Intel Trust Authority configuration
+└── config_tdx_guest.json        # TDX Guest attestation configuration
+```
+
+#### Linux Release (`attest-lin.tar.gz`)
+```
+attest-lin/
+├── attest                       # Attestation CLI tool
+├── read_report                  # Hardware report reader
+├── config_snp.json              # SNP with MAA configuration
+├── config_snp_guest.json        # SNP Guest attestation configuration
+├── config_tdx.json              # TDX with MAA configuration
+├── config_tdx_ita.json          # TDX with Intel Trust Authority configuration
+└── config_tdx_guest.json        # TDX Guest attestation configuration
+```
+
+### Quick Start with Pre-built Executables
+
+**Windows:**
+1. Download `attest-win.zip` from the latest release
+2. Extract the archive
+3. Run from PowerShell or Command Prompt:
+   ```powershell
+   cd attest-win
+   .\attest.exe --c config_tdx.json
+   .\read_report.exe
+   ```
+
+**Linux:**
+1. Download `attest-lin.tar.gz` from the latest release
+2. Extract and run:
+   ```bash
+   tar -xzf attest-lin.tar.gz
+   cd attest-lin
+   sudo ./attest --c config_tdx.json
+   sudo ./read_report
+   ```
+
+> **Note:** On Linux, you may need to make the executables runnable: `chmod +x attest read_report`
 
 ## Intall Dependencies and Build CLI Tool
 Install all the dependencies and build the CLI tool called `attest`
