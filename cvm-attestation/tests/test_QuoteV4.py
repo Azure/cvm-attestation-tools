@@ -238,24 +238,22 @@ class TestQuoteV4Accessors:
 class TestQuoteV4StringRepresentation:
   """Tests for __str__ method."""
 
-  def test_str_returns_none_without_parsed_data(self, capsys):
+  def test_str_returns_none_without_parsed_data(self):
     quote = QuoteV4.__new__(QuoteV4)
     quote.parsed_data = None
     
     result = quote.__str__()
-    captured = capsys.readouterr()
     
-    assert "No parsed data available" in captured.err
+    assert result == "No parsed data available."
 
-  def test_str_with_valid_data_prints_output(self, valid_v4_quote_data, capsys):
+  def test_str_with_valid_data_prints_output(self, valid_v4_quote_data):
     quote = QuoteV4(valid_v4_quote_data)
-    quote.__str__()
-    captured = capsys.readouterr()
+    result = quote.__str__()
     
-    assert "Quote Header:" in captured.out
-    assert "Version: 4" in captured.out
-    assert "TD Quote Body:" in captured.out
-    assert "Quote Signature Data:" in captured.out
+    assert "Quote Header:" in result
+    assert "Version: 4" in result
+    assert "TD Quote Body:" in result
+    assert "Quote Signature Data:" in result
 
 
 class TestQuoteV4EdgeCases:
@@ -358,3 +356,25 @@ class TestQuoteV4WithRealQuote:
     assert quote.parsed_data.quote_signature_data.signature == bytes.fromhex('0d3ad92b96cdff82ab473c6d654c3d0e60a7ae5657cbb470db99694c3e20d4771a8763c49dfb71b929748c385789fbdc303aaae205e1ada1b4621b339495b258')
     assert quote.parsed_data.quote_signature_data.attestation_key == bytes.fromhex('fde279fe998c7134a61545d9ec0f202de01a33248cfaa1a81936bc7f834681926467c7383302a8976cc2d8303428461b128ebe0a9cbf30f4b0887811a56eca24')
     assert quote.parsed_data.quote_signature_data.cert_data_size == 4166
+
+
+class TestQuoteV4String:
+  def test_str_returns_string_not_prints(self, valid_v4_quote_data, capsys):
+    quote = QuoteV4(valid_v4_quote_data)
+    
+    # Call __str__ and capture the result
+    result = str(quote)
+    
+    # Verify it returns a string
+    assert isinstance(result, str)
+    assert len(result) > 0
+    
+    # Verify nothing was printed to stdout
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    
+    # Verify the string contains expected content
+    assert "Quote Header:" in result
+    assert "TD Quote Body:" in result
+    assert "Quote Signature Data:" in result
+    assert "Version: 4" in result

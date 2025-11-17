@@ -101,39 +101,40 @@ class QuoteV4(Quote):
     String representation of the quote for printing.
     :return: Formatted string with quote details
     """
-    """Print the parsed quote details in v4 format."""
     if self.parsed_data is None:
-      print("No parsed data available.", file=sys.stderr)
-      return
+      return "No parsed data available."
     
-    print("Quote Header:")
-    print(f"  Version: {self.parsed_data.header.version}")
-    print(f"  Attestation Key Type: {self.parsed_data.header.attestation_key_type}")
-    print(f"  TEE Type: {self.parsed_data.header.tee_type.hex()}")
-    print(f"  QE Vendor ID: {self.parsed_data.header.qe_vendor_id.hex()}")
-    print(f"  User Data: {self.parsed_data.header.user_data.hex()}")
+    lines = []
+    lines.append("Quote Header:")
+    lines.append(f"  Version: {self.parsed_data.header.version}")
+    lines.append(f"  Attestation Key Type: {self.parsed_data.header.attestation_key_type}")
+    lines.append(f"  TEE Type: {self.parsed_data.header.tee_type.hex()}")
+    lines.append(f"  QE Vendor ID: {self.parsed_data.header.qe_vendor_id.hex()}")
+    lines.append(f"  User Data: {self.parsed_data.header.user_data.hex()}")
 
-    print("\nTD Quote Body:")
-    print(f"  TEE TCB SVN: {self.parsed_data.td_quote_body.tee_tcb_svn.hex()}")
-    print(f"  MR SEAM: {self.parsed_data.td_quote_body.mrseam.hex()}")
-    print(f"  MR SIGNER SEAM: {self.parsed_data.td_quote_body.mrsignerseam.hex()}")
-    print(f"  SEAM ATTRIBUTES: {self.parsed_data.td_quote_body.seam_attributes.hex()}")
-    print(f"  TD ATTRIBUTES: {self.parsed_data.td_quote_body.td_attributes.hex()}")
-    print(f"  XFAM: {self.parsed_data.td_quote_body.xfam}")
-    print(f"  MR TD: {self.parsed_data.td_quote_body.mr_td.hex()}")
-    print(f"  MR CONFIG ID: {self.parsed_data.td_quote_body.mr_config_id.hex()}")
-    print(f"  MR OWNER: {self.parsed_data.td_quote_body.mr_owner.hex()}")
-    print(f"  MR OWNER CONFIG: {self.parsed_data.td_quote_body.mr_owner_config.hex()}")
-    print(f"  RTMR[0]: {self.parsed_data.td_quote_body.rtmr_0.hex()}")
-    print(f"  RTMR[1]: {self.parsed_data.td_quote_body.rtmr_1.hex()}")
-    print(f"  RTMR[2]: {self.parsed_data.td_quote_body.rtmr_2.hex()}")
-    print(f"  RTMR[3]: {self.parsed_data.td_quote_body.rtmr_3.hex()}")
-    print(f"  REPORT DATA: {self.parsed_data.td_quote_body.report_data.hex()}")
+    lines.append("\nTD Quote Body:")
+    lines.append(f"  TEE TCB SVN: {self.parsed_data.td_quote_body.tee_tcb_svn.hex()}")
+    lines.append(f"  MR SEAM: {self.parsed_data.td_quote_body.mrseam.hex()}")
+    lines.append(f"  MR SIGNER SEAM: {self.parsed_data.td_quote_body.mrsignerseam.hex()}")
+    lines.append(f"  SEAM ATTRIBUTES: {self.parsed_data.td_quote_body.seam_attributes.hex()}")
+    lines.append(f"  TD ATTRIBUTES: {self.parsed_data.td_quote_body.td_attributes.hex()}")
+    lines.append(f"  XFAM: {self.parsed_data.td_quote_body.xfam}")
+    lines.append(f"  MR TD: {self.parsed_data.td_quote_body.mr_td.hex()}")
+    lines.append(f"  MR CONFIG ID: {self.parsed_data.td_quote_body.mr_config_id.hex()}")
+    lines.append(f"  MR OWNER: {self.parsed_data.td_quote_body.mr_owner.hex()}")
+    lines.append(f"  MR OWNER CONFIG: {self.parsed_data.td_quote_body.mr_owner_config.hex()}")
+    lines.append(f"  RTMR[0]: {self.parsed_data.td_quote_body.rtmr_0.hex()}")
+    lines.append(f"  RTMR[1]: {self.parsed_data.td_quote_body.rtmr_1.hex()}")
+    lines.append(f"  RTMR[2]: {self.parsed_data.td_quote_body.rtmr_2.hex()}")
+    lines.append(f"  RTMR[3]: {self.parsed_data.td_quote_body.rtmr_3.hex()}")
+    lines.append(f"  REPORT DATA: {self.parsed_data.td_quote_body.report_data.hex()}")
 
-    print("\nQuote Signature Data:")
-    print(f"  Signature: {self.parsed_data.quote_signature_data.signature.hex()}")
-    print(f"  Attestation Key: {self.parsed_data.quote_signature_data.attestation_key.hex()}")
-    print(f"  Cert Data Size: {self.parsed_data.quote_signature_data.cert_data_size}")
+    lines.append("\nQuote Signature Data:")
+    lines.append(f"  Signature: {self.parsed_data.quote_signature_data.signature.hex()}")
+    lines.append(f"  Attestation Key: {self.parsed_data.quote_signature_data.attestation_key.hex()}")
+    lines.append(f"  Cert Data Size: {self.parsed_data.quote_signature_data.cert_data_size}")
+    
+    return "\n".join(lines)
 
   def get_header(self):
     """Return the parsed header."""

@@ -98,42 +98,44 @@ class QuoteV5(Quote):
     :return: Formatted string with quote details
     """
     if self.parsed_data is None:
-      print("No parsed data available.", file=sys.stderr)
-      return
+      return "No parsed data available."
     
-    print("TD Quote Header:")
-    print(f"  Version: {self.parsed_data.header.version}")
-    print(f"  Attestation Key Type: {self.parsed_data.header.attestation_key_type}")
-    print(f"  TEE Type: {self.parsed_data.header.tee_type}")
-    print(f"  Reserved 1: {self.parsed_data.header.reserved_1.hex()}")
-    print(f"  Reserved 2: {self.parsed_data.header.reserved_2.hex()}")
-    print(f"  QE Vendor ID: {self.parsed_data.header.qe_vendor_id.hex()}")
-    print(f"  User Data: {self.parsed_data.header.user_data.hex()}")
+    lines = []
+    lines.append("TD Quote Header:")
+    lines.append(f"  Version: {self.parsed_data.header.version}")
+    lines.append(f"  Attestation Key Type: {self.parsed_data.header.attestation_key_type}")
+    lines.append(f"  TEE Type: {self.parsed_data.header.tee_type}")
+    lines.append(f"  Reserved 1: {self.parsed_data.header.reserved_1.hex()}")
+    lines.append(f"  Reserved 2: {self.parsed_data.header.reserved_2.hex()}")
+    lines.append(f"  QE Vendor ID: {self.parsed_data.header.qe_vendor_id.hex()}")
+    lines.append(f"  User Data: {self.parsed_data.header.user_data.hex()}")
     
-    print("\nTD Quote Body Descriptor:")
-    print(f"  Quote Body Type: {self.parsed_data.body.quote_body_type.hex()}")
-    print(f"  Size: {self.parsed_data.body.size}")
+    lines.append("\nTD Quote Body Descriptor:")
+    lines.append(f"  Quote Body Type: {self.parsed_data.body.quote_body_type.hex()}")
+    lines.append(f"  Size: {self.parsed_data.body.size}")
     
-    print("\nTD Quote Body:")
-    print(f"  TEE TCB SVN: {self.parsed_data.body.body.tee_tcb_svn.hex()}")
-    print(f"  MRSEAM: {self.parsed_data.body.body.mrseam.hex()}")
-    print(f"  MRSIGNERSEAM: {self.parsed_data.body.body.mrsignerseam.hex()}")
-    print(f"  SEAM ATTRIBUTES: {self.parsed_data.body.body.seam_attributes.hex()}")
-    print(f"  TD ATTRIBUTES: {self.parsed_data.body.body.td_attributes.hex()}")
-    print(f"  XFAM: {self.parsed_data.body.body.xfam}")
-    print(f"  MR TD: {self.parsed_data.body.body.mr_td.hex()}")
-    print(f"  MR CONFIG ID: {self.parsed_data.body.body.mr_config_id.hex()}")
-    print(f"  MR OWNER: {self.parsed_data.body.body.mr_owner.hex()}")
-    print(f"  MR OWNER CONFIG: {self.parsed_data.body.body.mr_owner_config.hex()}")
+    lines.append("\nTD Quote Body:")
+    lines.append(f"  TEE TCB SVN: {self.parsed_data.body.body.tee_tcb_svn.hex()}")
+    lines.append(f"  MRSEAM: {self.parsed_data.body.body.mrseam.hex()}")
+    lines.append(f"  MRSIGNERSEAM: {self.parsed_data.body.body.mrsignerseam.hex()}")
+    lines.append(f"  SEAM ATTRIBUTES: {self.parsed_data.body.body.seam_attributes.hex()}")
+    lines.append(f"  TD ATTRIBUTES: {self.parsed_data.body.body.td_attributes.hex()}")
+    lines.append(f"  XFAM: {self.parsed_data.body.body.xfam}")
+    lines.append(f"  MR TD: {self.parsed_data.body.body.mr_td.hex()}")
+    lines.append(f"  MR CONFIG ID: {self.parsed_data.body.body.mr_config_id.hex()}")
+    lines.append(f"  MR OWNER: {self.parsed_data.body.body.mr_owner.hex()}")
+    lines.append(f"  MR OWNER CONFIG: {self.parsed_data.body.body.mr_owner_config.hex()}")
     for i, rtmr in enumerate(self.parsed_data.body.body.rtmr):
-      print(f"  RTMR[{i}]: {rtmr.hex()}")
-    print(f"  REPORT DATA: {self.parsed_data.body.body.report_data.hex()}")
-    print(f"  TEE TCB SVN 2: {self.parsed_data.body.body.tee_tcb_svn_2.hex()}")
-    print(f"  MR SERVICE TD: {self.parsed_data.body.body.mr_service_td.hex()}")
+      lines.append(f"  RTMR[{i}]: {rtmr.hex()}")
+    lines.append(f"  REPORT DATA: {self.parsed_data.body.body.report_data.hex()}")
+    lines.append(f"  TEE TCB SVN 2: {self.parsed_data.body.body.tee_tcb_svn_2.hex()}")
+    lines.append(f"  MR SERVICE TD: {self.parsed_data.body.body.mr_service_td.hex()}")
     
-    print("\nQuote Signature Data:")
-    print(f"  Length: {self.parsed_data.quote_signature_data_len}")
-    print(f"  Data: {self.parsed_data.quote_signature_data.hex()}")
+    lines.append("\nQuote Signature Data:")
+    lines.append(f"  Length: {self.parsed_data.quote_signature_data_len}")
+    lines.append(f"  Data: {self.parsed_data.quote_signature_data.hex()}")
+    
+    return "\n".join(lines)
 
   def get_header(self):
     """Return the parsed header."""

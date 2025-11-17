@@ -259,25 +259,23 @@ class TestQuoteV5Accessors:
 class TestQuoteV5StringRepresentation:
   """Tests for __str__ method."""
 
-  def test_str_returns_none_without_parsed_data(self, capsys):
+  def test_str_returns_none_without_parsed_data(self):
     quote = QuoteV5.__new__(QuoteV5)
     quote.parsed_data = None
     
     result = quote.__str__()
-    captured = capsys.readouterr()
     
-    assert "No parsed data available" in captured.err
+    assert result == "No parsed data available."
 
-  def test_str_with_valid_data_prints_output(self, valid_v5_quote_data, capsys):
+  def test_str_with_valid_data_prints_output(self, valid_v5_quote_data):
     quote = QuoteV5(valid_v5_quote_data)
-    quote.__str__()
-    captured = capsys.readouterr()
+    result = quote.__str__()
     
-    assert "TD Quote Header:" in captured.out
-    assert "Version: 5" in captured.out
-    assert "TD Quote Body Descriptor:" in captured.out
-    assert "TD Quote Body:" in captured.out
-    assert "Quote Signature Data:" in captured.out
+    assert "TD Quote Header:" in result
+    assert "Version: 5" in result
+    assert "TD Quote Body Descriptor:" in result
+    assert "TD Quote Body:" in result
+    assert "Quote Signature Data:" in result
 
 
 class TestQuoteV5EdgeCases:
@@ -413,3 +411,25 @@ class TestQuoteV5WithRealQuote:
 
     # checking that the signature data length matches expected value
     assert quote.parsed_data.quote_signature_data_len == 4300
+
+
+class TestQuoteV5String:
+  def test_str_returns_string_not_prints(self, valid_v5_quote_data, capsys):
+    quote = QuoteV5(valid_v5_quote_data)
+    
+    # Call __str__ and capture the result
+    result = str(quote)
+    
+    # Verify it returns a string
+    assert isinstance(result, str)
+    assert len(result) > 0
+    
+    # Verify nothing was printed to stdout
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    
+    # Verify the string contains expected content
+    assert "Quote Header:" in result
+    assert "TD Quote Body:" in result
+    assert "Quote Signature Data:" in result
+    assert "Version: 5" in result
