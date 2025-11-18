@@ -5,7 +5,6 @@
 
 import json
 from enum import Enum
-from src.tpm_wrapper import TssWrapper
 from src.encoder import Encoder
 
 
