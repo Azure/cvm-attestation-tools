@@ -1,4 +1,5 @@
 # ignore all generated files
 runtime_data.json
 *.bin
-!tests/report.bin
+!tests/reports/report.bin
+!tests/reports
