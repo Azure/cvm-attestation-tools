@@ -1,13 +1,13 @@
-# test_Quote.py
+# test_quote.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
 import pytest
 import struct
-from src.Quote import Quote
-from src.QuoteV4 import QuoteV4
-from src.QuoteV5 import QuoteV5
+from src.quote import Quote
+from src.quote_v4 import QuoteV4
+from src.quote_v5 import QuoteV5
 
 
 class TestQuoteFactory:

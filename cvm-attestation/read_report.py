@@ -1,10 +1,10 @@
 import click
-from AttestationClient import AttestationClient, AttestationClientParameters, Verifier
-from src.Isolation import IsolationType
-from src.Logger import Logger
-from snp import AttestationReport
+from src.attestation_client import AttestationClient, AttestationClientParameters, Verifier
+from src.isolation import IsolationType
+from src.logger import Logger
+from src.snp import AttestationReport
 import json
-from src.Quote import Quote
+from src.quote import Quote
 
 
 DEFAULT_ENDPOINT = 'https://sharedweu.weu.attest.azure.net/attest/SevSnpVm?api-version=2022-08-01'

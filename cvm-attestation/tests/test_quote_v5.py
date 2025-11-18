@@ -1,4 +1,4 @@
-# test_QuoteV5.py
+# test_quote_v5.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
@@ -6,7 +6,7 @@
 import pytest
 import struct
 import os
-from src.QuoteV5 import QuoteV5
+from src.quote_v5 import QuoteV5
 
 
 @pytest.fixture
@@ -367,7 +367,7 @@ class TestQuoteV5EdgeCases:
 class TestQuoteV5WithRealQuote:
   def read_real_quote(self):
     current_dir = os.path.dirname(__file__)
-    file_path = os.path.join(current_dir, "td_quote_v5.dat")
+    file_path = os.path.join(current_dir, "reports", "td_quote_v5.dat")
     with open(file_path, "rb") as file:
       td_quote = file.read()
 

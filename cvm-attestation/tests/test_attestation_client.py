@@ -1,15 +1,19 @@
+# test_attestation_client.py
+#
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import pytest
 from unittest.mock import MagicMock, patch
-from AttestationClient import HardwareEvidence, TssWrapper
-from AttestationClient import AttestationClient, AttestationClientParameters, IsolationType, Verifier
-from src.AttestationProvider import *
-from AttestationTypes import EphemeralKey
+from src.attestation_client import AttestationClient, IsolationType, HardwareEvidence
+from src.attestation_provider import *
+from src.attestation_types import EphemeralKey
 from pytest_mock import mocker
 
 
 @pytest.fixture
-@patch('AttestationClient.TssWrapper')
-@patch('AttestationClient.ReportParser')
+@patch('src.attestation_client.TssWrapper')
+@patch('src.attestation_client.ReportParser')
 def attestation_client(mock_report_parser, mock_tss_wrapper, mocker):
   # Mock the log object
   log_mock = mocker.Mock()
@@ -27,11 +31,11 @@ def attestation_client(mock_report_parser, mock_tss_wrapper, mocker):
   return AttestationClient(logger=log_mock, parameters=parameters_mock)
 
 
-@patch('AttestationClient.TssWrapper')
-@patch('AttestationClient.ReportParser')
-@patch('AttestationClient.Encoder')
-@patch('AttestationClient.ImdsClient')
-@patch('AttestationClient.MAAProvider')
+@patch('src.attestation_client.TssWrapper')
+@patch('src.attestation_client.ReportParser')
+@patch('src.attestation_client.Encoder')
+@patch('src.attestation_client.ImdsClient')
+@patch('src.attestation_client.MAAProvider')
 def test_attest_platform_success_snp(
   mock_imds_client,
   mock_encoder,
@@ -67,11 +71,11 @@ def test_attest_platform_success_snp(
   attestation_client.log.info.assert_any_call("mock_token")
 
 
-@patch('AttestationClient.TssWrapper')
-@patch('AttestationClient.ReportParser')
-@patch('AttestationClient.Encoder')
-@patch('AttestationClient.ImdsClient')
-@patch('AttestationClient.MAAProvider')
+@patch('src.attestation_client.TssWrapper')
+@patch('src.attestation_client.ReportParser')
+@patch('src.attestation_client.Encoder')
+@patch('src.attestation_client.ImdsClient')
+@patch('src.attestation_client.MAAProvider')
 def test_attest_platform_success_tdx(
   mock_imds_client,
   mock_encoder,
@@ -107,9 +111,9 @@ def test_attest_platform_success_tdx(
   attestation_client.log.info.assert_any_call("mock_token")
 
 
-@patch('AttestationClient.TssWrapper')
-@patch('AttestationClient.ReportParser')
-@patch.object(AttestationClient, 'log_snp_report')
+@patch('src.attestation_client.TssWrapper')
+@patch('src.attestation_client.ReportParser')
+@patch('src.attestation_client.AttestationClient.log_snp_report')
 def test_get_hardware_evidence_success(
   mock_log_snp_report,
   mock_report_parser,
@@ -133,10 +137,10 @@ def test_get_hardware_evidence_success(
   attestation_client.log.info.assert_called_with('Collecting hardware evidence...')
 
 
-@patch('AttestationClient.TssWrapper')
-@patch('AttestationClient.ReportParser')
-@patch('AttestationClient.Encoder')
-@patch('AttestationClient.ImdsClient')
+@patch('src.attestation_client.TssWrapper')
+@patch('src.attestation_client.ReportParser')
+@patch('src.attestation_client.Encoder')
+@patch('src.attestation_client.ImdsClient')
 def test_get_hardware_evidence_tdx_successful(
   mock_imds_client,
   mock_encoder,
@@ -165,8 +169,8 @@ def test_get_hardware_evidence_tdx_successful(
   assert evidence.runtime_data == b"mock_runtime_data"
 
 
-@patch('AttestationClient.TssWrapper')
-@patch('AttestationClient.ReportParser')
+@patch('src.attestation_client.TssWrapper')
+@patch('src.attestation_client.ReportParser')
 def test_get_hardware_evidence_exception(mock_report_parser, mock_tss_wrapper, attestation_client):
   # Mock TssWrapper to raise an exception
   tss_wrapper_instance = mock_tss_wrapper.return_value

@@ -7,8 +7,8 @@ import pytest
 import json
 from unittest.mock import MagicMock, patch, mock_open
 from read_report import handle_hardware_report
-from AttestationClient import AttestationClient, HardwareEvidence
-from src.Isolation import IsolationType
+from src.attestation_client import AttestationClient, HardwareEvidence
+from src.isolation import IsolationType
 
 
 @pytest.fixture

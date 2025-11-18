@@ -1,4 +1,4 @@
-# AttestationClient.py
+# attestation_client.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
@@ -7,16 +7,17 @@ import json
 import time
 from enum import Enum
 from base64 import urlsafe_b64decode
-from src.OsInfo import OsInfo
-from src.Isolation import IsolationType, Isolation, TdxEvidence, SnpEvidence
-from src.Logger import Logger
-from src.ReportParser import ReportParser
-from src.ImdsClient import ImdsClient
-from src.AttestationProvider import MAAProvider, ITAProvider
-from AttestationTypes import TpmInfo
+from src.snp import AttestationReport
+from src.os_info import OsInfo
+from src.isolation import IsolationType, Isolation, TdxEvidence, SnpEvidence
+from src.logger import Logger
+from src.report_parser import ReportParser
+from src.imds_client import ImdsClient
+from src.attestation_provider import MAAProvider, ITAProvider
+from src.attestation_types import TpmInfo
 from src.measurements import get_measurements
-from src.Encoder import Encoder
-from tpm_wrapper import TssWrapper
+from src.encoder import Encoder
+from src.tpm_wrapper import TssWrapper
 from requests.exceptions import RequestException
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -24,7 +25,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-from snp import AttestationReport
 
 # The version number of the attestation protocol between the client and the service.
 PROTOCOL_VERSION = "2.0"

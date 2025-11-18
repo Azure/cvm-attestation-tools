@@ -1,15 +1,15 @@
-# test_ReportParser.py
+# test_report_parser.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
 import os
 import pytest
-from src.ReportParser import ReportParser
+from src.report_parser import ReportParser
 
 def read_hcl_report():
     current_dir = os.path.dirname(__file__)
-    file_path = os.path.join(current_dir, "report.bin")
+    file_path = os.path.join(current_dir, "reports", "report.bin")
     with open(file_path, "rb") as file:
       hcl_report = file.read()
 

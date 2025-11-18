@@ -1,4 +1,4 @@
-# Quote.py
+# quote.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
@@ -38,10 +38,10 @@ class Quote(ABC):
     version = int.from_bytes(data[0:2], byteorder='little')
     
     if version == 4:
-      from src.QuoteV4 import QuoteV4
+      from src.quote_v4 import QuoteV4
       return QuoteV4(data)
     elif version == 5:
-      from src.QuoteV5 import QuoteV5
+      from src.quote_v5 import QuoteV5
       return QuoteV5(data)
     else:
       raise ValueError(f"Unsupported quote version: {version}. Only versions 4 and 5 are supported.")
