@@ -7,7 +7,6 @@ import hashlib
 from src.attestation_client import AttestationClient, AttestationClientParameters, Verifier
 from src.isolation import IsolationType
 from src.logger import Logger
-from urllib.parse import urlparse
 from src.endpoint_selector import EndpointSelector
 import os
 
