@@ -1,4 +1,4 @@
-# AttestationTypes.py
+# attestation_types.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
@@ -13,13 +13,12 @@ def base64_encode(data):
   return base64_bytes.decode('utf-8')
 
 
-
 # The version number of the attestation protocol between the client and the service.
 PROTOCOL_VERSION = "2.0"
 
 
 class TpmInfo:
-  def __init__(self, aik_cert = None, aik_pub = None, pcr_quote = None, pcr_sig = None, pcr_values = None, key = None):
+  def __init__(self, aik_cert=None, aik_pub=None, pcr_quote=None, pcr_sig=None, pcr_values=None, key=None):
     self.aik_cert = aik_cert
     self.aik_pub = aik_pub 
     self.pcr_quote = pcr_quote

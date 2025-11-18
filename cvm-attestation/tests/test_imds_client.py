@@ -1,4 +1,5 @@
-# test_ImdsClient.py
+# test_imds_client.py
+#
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
@@ -6,7 +7,7 @@ import pytest
 import json
 from unittest.mock import MagicMock, patch
 import requests
-from src.ImdsClient import ImdsClient, TDQuoteException, VcekCertException, MetadataException
+from src.imds_client import ImdsClient, TDQuoteException, VcekCertException, MetadataException
 
 # Some mock data
 snp_data = {

@@ -1,12 +1,13 @@
-# EndpointSelector.py
+# endpoint_selector.py
+#
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
 import json
 import random
-from src.Logger import Logger
-from src.ImdsClient import ImdsClient
-from src.Isolation import IsolationType
+from src.logger import Logger
+from src.imds_client import ImdsClient
+from src.isolation import IsolationType
 import os
 
 

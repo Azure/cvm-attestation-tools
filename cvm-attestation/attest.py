@@ -4,11 +4,11 @@
 import json
 import click
 import hashlib
-from AttestationClient import AttestationClient, AttestationClientParameters, Verifier
-from src.Isolation import IsolationType
-from src.Logger import Logger
+from src.attestation_client import AttestationClient, AttestationClientParameters, Verifier
+from src.isolation import IsolationType
+from src.logger import Logger
 from urllib.parse import urlparse
-from src.EndpointSelector import EndpointSelector
+from src.endpoint_selector import EndpointSelector
 import os
 
 
@@ -17,7 +17,7 @@ def parse_config_file(filename):
     return json.load(json_file)
 
 
-IsolationTypeLookup = {
+ISOLATION_TYPE_LOOKUP = {
   'maa_tdx': IsolationType.TDX,
   'maa_snp': IsolationType.SEV_SNP,
   'ita': IsolationType.TDX,
@@ -25,7 +25,7 @@ IsolationTypeLookup = {
 }
 
 
-AttestationProviderLookup = {
+ATTESTATION_PROVIDER_LOOKUP = {
   'maa_tdx': Verifier.MAA,
   'maa_snp': Verifier.MAA,
   'ita': Verifier.ITA,
@@ -90,7 +90,7 @@ def attest(c, t, s):
   logger.info(f"api_key: {api_key}")
   logger.info(f"claims: {claims}")
 
-  isolation_type = IsolationTypeLookup.get(provider_tag, IsolationTypeLookup['default'])
+  isolation_type = ISOLATION_TYPE_LOOKUP.get(provider_tag, ISOLATION_TYPE_LOOKUP['default'])
   endpoint = get_endpoint(logger, isolation_type, attestation_type)
   logger.info(f"Attestation endpoint: {endpoint}")
 
@@ -100,7 +100,7 @@ def attest(c, t, s):
   logger.info(f"SHA512 of user provided claims: {hex_dig.upper()}")
 
   # Build attestation client parameters
-  provider = AttestationProviderLookup.get(provider_tag, AttestationProviderLookup['default'])
+  provider = ATTESTATION_PROVIDER_LOOKUP.get(provider_tag, ATTESTATION_PROVIDER_LOOKUP['default'])
   client_parameters = AttestationClientParameters(
     endpoint=endpoint,
     verifier=provider,

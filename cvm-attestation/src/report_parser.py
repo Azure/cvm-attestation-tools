@@ -1,9 +1,9 @@
-# ReportParser.py
+# report_parser.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-from src.Isolation import IsolationType
+from src.isolation import IsolationType
 
 # byte offset of the td report
 HW_REPORT_START = 32

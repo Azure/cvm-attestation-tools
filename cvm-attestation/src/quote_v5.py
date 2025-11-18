@@ -1,10 +1,10 @@
-# QuoteV5.py
+# quote_v5.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
 import sys
-from src.Quote import Quote
+from src.quote import Quote
 from construct import Struct, Int16ul, Int32ul, Int64ul, Bytes, Array, this
 
 

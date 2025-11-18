@@ -1,4 +1,4 @@
-# OsInfo.py
+# os_info.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.

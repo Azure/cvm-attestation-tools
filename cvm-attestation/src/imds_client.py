@@ -1,7 +1,12 @@
+# imds_client.py
+#
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import requests
 import json
 import time
-from src.Logger import Logger
+from src.logger import Logger
 
 ACC_URL = "http://169.254.169.254/acc"
 QUOTE_PATH = "/tdquote"

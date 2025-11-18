@@ -6,9 +6,9 @@
 from hashlib import sha512, sha256
 import json
 from external.TSS_MSR.src.Tpm import *
-from AttestationTypes import *
+from src.attestation_types import *
 from external.TSS_MSR.src.Crypt import Crypto as crypto
-from src.Logger import Logger
+from src.logger import Logger
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend

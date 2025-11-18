@@ -1,10 +1,10 @@
-# test_Isolation.py
+# test_isolation.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
 import pytest
-from src.Isolation import IsolationType, Isolation, SnpEvidence, TdxEvidence
+from src.isolation import IsolationType, Isolation, SnpEvidence, TdxEvidence
 
 # Test case for the SnpEvidence class
 def test_snp_evidence():
