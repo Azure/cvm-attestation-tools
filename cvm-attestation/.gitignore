@@ -2,4 +2,3 @@
 runtime_data.json
 *.bin
 !tests/reports/report.bin
-!tests/reports
