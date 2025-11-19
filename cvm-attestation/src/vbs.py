@@ -4,7 +4,6 @@
 # Licensed under the MIT license.
 
 import struct
-from typing import List
 
 VBS_VM_SHA256_SIZE = 32
 VBS_VM_HOST_DATA_SIZE = 32
