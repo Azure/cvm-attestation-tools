@@ -9,7 +9,7 @@ from src.report_parser import ReportParser
 
 def read_hcl_report():
     current_dir = os.path.dirname(__file__)
-    file_path = os.path.join(current_dir, "reports", "report.bin")
+    file_path = os.path.join(current_dir, "reports", "snp_hcl_report.bin")
     with open(file_path, "rb") as file:
       hcl_report = file.read()
 
