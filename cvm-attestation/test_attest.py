@@ -8,11 +8,9 @@ from click.testing import CliRunner
 from attest import attest
 import hashlib
 from unittest.mock import MagicMock, patch
-from AttestationClient import AttestationClient, AttestationClientParameters
-from src.Isolation import IsolationType
-from src.EndpointSelector import EndpointSelector
-from src.Logger import Logger
-from attest import get_endpoint, attest, AttestException  # Adjust import as needed
+from src.attestation_client import AttestationClient
+from src.isolation import IsolationType
+from attest import get_endpoint, attest
 
 # Sample mock config JSON
 MOCK_CONFIG = {

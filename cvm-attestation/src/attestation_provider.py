@@ -1,4 +1,4 @@
-# AttestationProvider.py
+# attestation_provider.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
@@ -8,8 +8,8 @@ import json
 import jwt
 import time
 from abc import ABC, abstractmethod
-from src.Isolation import IsolationType
-from src.Logger import Logger
+from src.isolation import IsolationType
+from src.logger import Logger
 from urllib.parse import urlparse
 from requests.exceptions import RequestException
 

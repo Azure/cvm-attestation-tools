@@ -1,4 +1,4 @@
-# AttestationClient.py
+# attestation_client.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
@@ -7,16 +7,17 @@ import json
 import time
 from enum import Enum
 from base64 import urlsafe_b64decode
-from src.OsInfo import OsInfo
-from src.Isolation import IsolationType, Isolation, TdxEvidence, SnpEvidence, TrustedLaunchEvidence
-from src.Logger import Logger
-from src.ReportParser import ReportParser
-from src.ImdsClient import ImdsClient
-from src.AttestationProvider import MAAProvider, ITAProvider
-from AttestationTypes import TpmInfo
+from src.snp import AttestationReport
+from src.os_info import OsInfo
+from src.isolation import IsolationType, Isolation, TdxEvidence, SnpEvidence, TrustedLaunchEvidence
+from src.logger import Logger
+from src.report_parser import ReportParser
+from src.imds_client import ImdsClient
+from src.attestation_provider import MAAProvider, ITAProvider
+from src.attestation_types import TpmInfo
 from src.measurements import get_measurements
-from src.Encoder import Encoder
-from tpm_wrapper import TssWrapper
+from src.encoder import Encoder
+from src.tpm_wrapper import TssWrapper
 from requests.exceptions import RequestException
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -24,7 +25,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-from snp import AttestationReport
 
 # The version number of the attestation protocol between the client and the service.
 PROTOCOL_VERSION = "2.0"
@@ -65,9 +65,9 @@ class HardwareEvidence:
     The runtime data.
   """
 
-  def __init__(self, report_type: str, hardware_report: bytes, runtime_data: bytes):
-    if not isinstance(report_type, str):
-      raise TypeError(f"Expected bytes for report_type, got {type(report_type).__name__}")
+  def __init__(self, report_type: IsolationType, hardware_report: bytes, runtime_data: bytes):
+    if not isinstance(report_type, IsolationType):
+      raise TypeError(f"Expected IsolationType for report_type, got {type(report_type).__name__}")
     if not isinstance(hardware_report, bytes):
       raise TypeError(f"Expected bytes for hardware_report, got {type(hardware_report).__name__}")
     if not isinstance(runtime_data, bytes):
@@ -85,11 +85,7 @@ class Verifier(Enum):
 
 
 class AttestationClientParameters:
-  def __init__(self, endpoint: str, verifier: Verifier, isolation_type: IsolationType, claims = None, api_key = None):
-    # Validate the isolation type
-    if not isinstance(isolation_type, IsolationType):
-      raise ValueError(f"Unsupported isolation type: {isolation_type}. Supported types: {list(IsolationType)}")
-    
+  def __init__(self, endpoint: str, verifier: Verifier, claims = None, api_key = None):
      # Validate the verifier
     if not isinstance(verifier, Verifier):
       raise ValueError(f"Unsupported isolation type: {verifier}. Supported types: {list(Verifier)}")
@@ -97,7 +93,6 @@ class AttestationClientParameters:
     self.endpoint = endpoint
     self.verifier = verifier
     self.api_key = api_key
-    self.isolation_type = isolation_type
     self.user_claims = claims
 
 
@@ -108,14 +103,23 @@ class UnsupportedReportTypeException(Exception):
 class AttestationClient():
   def __init__(self, logger: Logger, parameters: AttestationClientParameters):
     verifier = parameters.verifier
-    isolation_type = parameters.isolation_type
     endpoint = parameters.endpoint
     api_key = parameters.api_key
 
     self.parameters = parameters
     self.log = logger
 
-    self.provider = MAAProvider(logger,isolation_type,endpoint) if verifier == Verifier.MAA else ITAProvider(logger,isolation_type,endpoint, api_key) if verifier == Verifier.ITA else None
+     # Extract Hardware Report and Runtime Data
+    tss_wrapper = TssWrapper(self.log)
+    hcl_report = tss_wrapper.get_hcl_report(self.parameters.user_claims)
+    report_type = ReportParser.extract_report_type(hcl_report)
+
+    if verifier == Verifier.MAA:
+      self.provider = MAAProvider(logger, report_type, endpoint)
+    elif verifier == Verifier.ITA:
+      self.provider = ITAProvider(logger, report_type, endpoint, api_key)
+    else:
+      self.provider = None
 
   def get_hardware_evidence(self) -> HardwareEvidence:
     """
@@ -137,10 +141,9 @@ class AttestationClient():
       hw_report = ReportParser.extract_hw_report(hcl_report)
       runtime_data = ReportParser.extract_runtimes_data(hcl_report)
 
-      isolation_type = self.parameters.isolation_type
-      if report_type == 'snp' and isolation_type == IsolationType.SEV_SNP:
+      if report_type == IsolationType.SEV_SNP:
         self.log_snp_report(hw_report)
-      elif report_type == 'tdx' and isolation_type == IsolationType.TDX:
+      elif report_type == IsolationType.TDX:
         self.log.info("Fetching td quote...")
 
         # Logs important TDX fields from the hardware report
@@ -314,7 +317,7 @@ class AttestationClient():
         self.log.info('Attesting Platform Evidence...')
 
         tss_wrapper = TssWrapper(self.log)
-        isolation_type = self.parameters.isolation_type
+
         # Extract Hardware Report and Runtime Data
         hcl_report = tss_wrapper.get_hcl_report(self.parameters.user_claims)
         report_type = ReportParser.extract_report_type(hcl_report)
@@ -328,9 +331,9 @@ class AttestationClient():
         encoded_hw_evidence = ""
 
         imds_client = ImdsClient(self.log)
-        if report_type == 'tdx' and isolation_type == IsolationType.TDX:
+        if report_type == IsolationType.TDX:
           encoded_hw_evidence = imds_client.get_td_quote(encoded_report)
-        elif report_type == 'snp' and isolation_type == IsolationType.SEV_SNP:
+        elif report_type == IsolationType.SEV_SNP:
           # Logs important SNP fields from the hardware report
           self.log_snp_report(hw_report)
 

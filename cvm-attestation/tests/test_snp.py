@@ -1,6 +1,11 @@
+# test_snp.py
+#
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import pytest
 import struct
-from snp import Signature, TcbVersion, PlatformInfo, KeyInfo, AttestationReport
+from src.snp import Signature, TcbVersion, PlatformInfo, KeyInfo, AttestationReport
 
 
 @pytest.fixture

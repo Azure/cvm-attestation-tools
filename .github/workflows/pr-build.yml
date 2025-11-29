@@ -1,0 +1,50 @@
+name: PR Build Test
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  Build-On-Windows:
+    runs-on: windows-2022
+    steps:
+      - name: Check out PR code
+        uses: actions/checkout@v4
+      
+      - name: Build executables
+        shell: pwsh
+        run: |
+          cd ${{ github.workspace }}\cvm-attestation
+          .\build.ps1 -Verbose
+      
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-attest-win
+          path: ${{ github.workspace }}\cvm-attestation\release\*
+          retention-days: 7
+
+  Build-On-Linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out PR code
+        uses: actions/checkout@v4
+      
+      - name: Build executables
+        shell: bash
+        run: |
+          cd ${{ github.workspace }}/cvm-attestation
+          chmod +x build.sh
+          sudo ./build.sh --verbose
+      
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-attest-lin
+          path: ${{ github.workspace }}/cvm-attestation/release/*
+          retention-days: 7

@@ -1,85 +1,83 @@
 import click
-from AttestationClient import AttestationClient, AttestationClientParameters, Verifier
-from src.Isolation import IsolationType
-from src.Logger import Logger
-from snp import AttestationReport
-from src.ImdsClient import ImdsClient
-from src.Encoder import Encoder
-from deserialize_tdx_v4 import deserialize_td_quotev4, print_td_quotev4
+from src.attestation_client import AttestationClient, AttestationClientParameters, Verifier
+from src.isolation import IsolationType
+from src.logger import Logger
+from src.snp import AttestationReport
+import json
+from src.quote import Quote
 
 
 DEFAULT_ENDPOINT = 'https://sharedweu.weu.attest.azure.net/attest/SevSnpVm?api-version=2022-08-01'
 
 @click.command()
-@click.option(
-  '--t', '-type',
-  type=click.Choice(['snp_report', 'td_quote'], case_sensitive=True),
-  default='snp_report',
-  help='Specify the type of hardware report to dump: snp_report or td_quote.'
-)
-@click.option(
-  '--o', '-out',
-  type=click.Path(writable=True, dir_okay=False),
-  required=False,
-  help='Specify the file path to store the output (optional).'
-)
-def read_report(t, o):
+def read_report():
   """
   CLI tool to read and optionally save hardware reports.
   """
   logger = Logger('logger').get_logger()
 
-  logger.info("Attestation started...")
-  logger.info(f"Report type selected: {t}")
-
   # Initialize attestation client
   client_parameters = AttestationClientParameters(
-    DEFAULT_ENDPOINT,
-    Verifier.MAA,
-    IsolationType.SEV_SNP if t == 'snp_report' else IsolationType.TDX,
-    ''
+    endpoint=DEFAULT_ENDPOINT,
+    verifier=Verifier.MAA,
+    claims='',
+    api_key=None
   )
   attestation_client = AttestationClient(logger, client_parameters)
 
   # Handle the hardware report
-  handle_hardware_report(t, o, attestation_client)
+  handle_hardware_report(attestation_client)
 
 
-def handle_hardware_report(report_type, output_path, attestation_client):
+def handle_hardware_report(attestation_client):
   """
   Handle the hardware report generation and optional saving.
   """
   logger = attestation_client.log
-  logger.info(f"Reading hardware report: {report_type}")
+  logger.info(f"Reading hardware report...")
+
   evidence = attestation_client.get_hardware_evidence()
-  if report_type == 'snp_report':
-    # Retrieve and deserialize the SNP report
-    report = AttestationReport.deserialize(evidence.hardware_report)
+  logger.info(f"Hardware report type: {evidence.type}")
 
-    # Display the report
-    report.display()
+  # make sure that the hardware report type is the expected one
+  if evidence.type not in [IsolationType.SEV_SNP, IsolationType.TDX]:
+    raise ValueError(f"Invalid hardware report type: {evidence.type}")
 
-    filename = 'report.bin'
-    # Optionally save the report to a file
-    if output_path:
-      filename = output_path
-
-    with open(filename, 'wb') as file:
-      file.write(evidence.hardware_report)
-    logger.info(f"Report saved to: {filename}")
-
-    logger.info("Got attestation report successfully!")
-  elif report_type == 'td_quote':
+  # check each individual type
+  if evidence.type == IsolationType.SEV_SNP:
     try:
-      deserialized_td_quote = deserialize_td_quotev4(evidence.hardware_report)
-      print_td_quotev4(deserialized_td_quote)
-      
+      # Retrieve and deserialize the SNP report
+      report = AttestationReport.deserialize(evidence.hardware_report)
+
+      # Display the report
+      report.display()
+      logger.info("Got attestation report successfully!")
+    except Exception as e:
+      logger.error(f"Failed to parse the SNP report: {e}")
+      return
+  elif evidence.type == IsolationType.TDX:
+    try:
+      quote = Quote.from_bytes(evidence.hardware_report)
+      print(quote)
+      logger.info("Got TD quote successfully!")
     except UnicodeDecodeError:
       logger.error("Failed to decode the TD quote header. Ensure the report is valid.")
       return
-    
-  else:
-    raise ValueError(f"Invalid hardware report type: {report_type}")
+    except Exception as e:
+      logger.error(f"Failed to parse the TD quote: {e}")
+      return
+
+  # Store hardware report
+  file_path = 'report.bin'
+  with open(file_path, 'wb') as file:
+    file.write(evidence.hardware_report)
+  logger.info(f"Hardware report successfully written to: {file_path}")
+
+  # Stores the runtime data in a json file
+  json_data = json.loads(evidence.runtime_data)
+  with open('runtime_data.json', 'w') as file:
+    json.dump(json_data, file, indent=2)
+    logger.info(f"Runtime Data successfully written to: 'runtime_data.json'")
 
 
 if __name__ == "__main__":

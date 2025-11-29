@@ -1,19 +1,19 @@
-# Isolation.py
+# isolation.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
 import json
 from enum import Enum
-import tpm_wrapper
-from src.Encoder import Encoder
+from src.encoder import Encoder
 
 
 class IsolationType(Enum):
   UNDEFINED = 0
-  TRUSTED_LAUNCH = 1
+  VBS = 1
   SEV_SNP = 2
-  TDX = 3
+  TRUSTED_LAUNCH = 3
+  TDX = 4
 
 
 class Evidence:

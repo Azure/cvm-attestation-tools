@@ -1,7 +1,9 @@
-# ReportParser.py
+# report_parser.py
 #
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
+
+from src.isolation import IsolationType
 
 # byte offset of the td report
 HW_REPORT_START = 32
@@ -22,12 +24,19 @@ RUNTIME_DATA_SIZE_OFFSET = HCL_DATA_OFFSET + HCL_REQUEST_DATA_SIZE_OFFSET
 HCL_REQUEST_DATA_OFFSET = 20
 RUNTIME_DATA_OFFSET = HCL_DATA_OFFSET + HCL_REQUEST_DATA_OFFSET
 
+# Map integer report types returned from HCL to IsolationType enum
 REPORT_TYPE = {
   0: 'invalid_report',
-  1: 'reserved',
-  2: 'snp',
-  3: 'tvm',
-  4: 'tdx'
+  1: IsolationType.VBS,
+  2: IsolationType.SEV_SNP,
+  3: IsolationType.TRUSTED_LAUNCH,
+  4: IsolationType.TDX
+}
+
+# Map report types to their sizes
+REPORT_SIZE = {
+  IsolationType.TDX: TD_REPORT_SIZE,
+  IsolationType.SEV_SNP: SNP_REPORT_SIZE
 }
 
 class ReportParser:
@@ -65,11 +74,10 @@ class ReportParser:
     hw_report_size = 0
     report_type = ReportParser.extract_report_type(report)
 
-    if report_type == 'tdx':
-      hw_report_size = TD_REPORT_SIZE
-    elif report_type == 'snp':
-      hw_report_size = SNP_REPORT_SIZE
+    if report_type not in REPORT_SIZE:
+      raise ValueError(f"Unsupported report type: {report_type}")
 
+    hw_report_size = REPORT_SIZE[report_type]
     for i in range(HW_REPORT_START, HW_REPORT_START + hw_report_size):
       list.append(report[i])
 

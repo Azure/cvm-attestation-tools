@@ -1,4 +1,5 @@
-# test_EndpointSelector.py
+# test_endpoint_selector.py
+#
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
@@ -6,8 +7,8 @@ import pytest
 import json
 import random
 from unittest.mock import MagicMock, patch
-from src.EndpointSelector import EndpointSelector
-from src.Isolation import IsolationType
+from src.endpoint_selector import EndpointSelector
+from src.isolation import IsolationType
 
 # Sample test data
 MOCK_ENDPOINTS = {
@@ -67,7 +68,7 @@ def test_region_case_insensitivity(endpoint_selector):
 
 
 def test_get_attestation_platform_endpoint_for_tdx(endpoint_selector, mocker):
-  mock_imds_client = mocker.patch("src.EndpointSelector.ImdsClient")
+  mock_imds_client = mocker.patch("src.endpoint_selector.ImdsClient")
   mock_imds_instance = mock_imds_client.return_value
   mock_imds_instance.get_region_from_compute_metadata.return_value = "West Europe"
 
@@ -76,7 +77,7 @@ def test_get_attestation_platform_endpoint_for_tdx(endpoint_selector, mocker):
 
 
 def test_get_attestation_platform_endpoint_for_snp(endpoint_selector, mocker):
-  mock_imds_client = mocker.patch("src.EndpointSelector.ImdsClient")
+  mock_imds_client = mocker.patch("src.endpoint_selector.ImdsClient")
   mock_imds_instance = mock_imds_client.return_value
   mock_imds_instance.get_region_from_compute_metadata.return_value = "West Europe"
 
@@ -86,7 +87,7 @@ def test_get_attestation_platform_endpoint_for_snp(endpoint_selector, mocker):
 
 
 def test_get_attestation_guest_endpoint(endpoint_selector, mocker):
-  mock_imds_client = mocker.patch("src.EndpointSelector.ImdsClient")
+  mock_imds_client = mocker.patch("src.endpoint_selector.ImdsClient")
   mock_imds_instance = mock_imds_client.return_value
   mock_imds_instance.get_region_from_compute_metadata.return_value = "West Europe"
 

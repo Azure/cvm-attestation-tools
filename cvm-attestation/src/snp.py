@@ -1,3 +1,9 @@
+# snp.py
+#
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+
 import struct
 from typing import List
 
