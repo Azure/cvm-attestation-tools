@@ -85,7 +85,11 @@ class Verifier(Enum):
 
 
 class AttestationClientParameters:
-  def __init__(self, endpoint: str, verifier: Verifier, claims = None, api_key = None):
+  def __init__(self, endpoint: str, verifier: Verifier, isolation_type: IsolationType, claims = None, api_key = None):
+    # Validate the isolation type
+    if not isinstance(isolation_type, IsolationType):
+      raise ValueError(f"Unsupported isolation type: {isolation_type}. Supported types: {list(IsolationType)}")
+    
      # Validate the verifier
     if not isinstance(verifier, Verifier):
       raise ValueError(f"Unsupported isolation type: {verifier}. Supported types: {list(Verifier)}")
@@ -93,8 +97,8 @@ class AttestationClientParameters:
     self.endpoint = endpoint
     self.verifier = verifier
     self.api_key = api_key
+    self.isolation_type = isolation_type
     self.user_claims = claims
-
 
 class UnsupportedReportTypeException(Exception):
   pass
@@ -115,9 +119,9 @@ class AttestationClient():
     report_type = ReportParser.extract_report_type(hcl_report)
 
     if verifier == Verifier.MAA:
-      self.provider = MAAProvider(logger, report_type, endpoint)
+      self.provider = MAAProvider(logger, parameters.isolation_type, endpoint)
     elif verifier == Verifier.ITA:
-      self.provider = ITAProvider(logger, report_type, endpoint, api_key)
+      self.provider = ITAProvider(logger, parameters.isolation_type, endpoint, api_key)
     else:
       self.provider = None
 

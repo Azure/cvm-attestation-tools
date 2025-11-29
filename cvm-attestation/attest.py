@@ -105,6 +105,7 @@ def attest(c, t, s):
   client_parameters = AttestationClientParameters(
     endpoint=endpoint,
     verifier=provider,
+    isolation_type=isolation_type,
     claims=claims,
     api_key=api_key
   )
