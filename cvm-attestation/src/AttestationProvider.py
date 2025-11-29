@@ -90,6 +90,7 @@ class MAAProvider(IAttestationProvider):
           self.log.error(
             f"Failed to verify evidence due to invalid collateral, error: {response.text}"
           )
+          self.log.error(f"Request payload: {json.dumps(payload)}")
           return None
         elif response.status_code == 429:
           self.log.warning(f"Too many requests, error: {response.text}")
