@@ -113,11 +113,6 @@ class AttestationClient():
     self.parameters = parameters
     self.log = logger
 
-     # Extract Hardware Report and Runtime Data
-    tss_wrapper = TssWrapper(self.log)
-    hcl_report = tss_wrapper.get_hcl_report(self.parameters.user_claims)
-    report_type = ReportParser.extract_report_type(hcl_report)
-
     if verifier == Verifier.MAA:
       self.provider = MAAProvider(logger, parameters.isolation_type, endpoint)
     elif verifier == Verifier.ITA:
