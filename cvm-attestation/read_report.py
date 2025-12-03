@@ -76,12 +76,13 @@ def handle_hardware_report(attestation_client):
     try:
       vbs_report = VbsVmReport.deserialize(evidence.hardware_report)
       print(vbs_report)
-    except Exception as ex:
-      logger.error(f"Failed to parse VBS report: {ex}")
-      return
+      logger.info("Got VBS report successfully!")
     except Exception as e:
       logger.error(f"Failed to parse the VBS report: {e}")
       return
+  else:
+    logger.error(f"Unsupported hardware report type: {evidence.type}")
+    return
 
   # Store hardware report
   file_path = 'report.bin'
