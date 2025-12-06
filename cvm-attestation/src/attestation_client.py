@@ -31,12 +31,12 @@ PROTOCOL_VERSION = "2.0"
 
 
 class GuestAttestationParameters:
-  def __init__(self, os_info=None, tcg_logs=None, tpm_info=None, isolation=None, claims = None):
+  def __init__(self, os_info=None, tcg_logs=None, tpm_info=None, isolation=None, user_claims = None):
     self.os_info = os_info
     self.tcg_logs = tcg_logs
     self.tpm_info = tpm_info
     self.isolation = isolation
-    self.user_claims = claims
+    self.user_claims = user_claims
   
   def toJson(self):
     return json.dumps({
