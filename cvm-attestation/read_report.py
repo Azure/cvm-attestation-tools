@@ -1,10 +1,16 @@
+# read_report.py
+#
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 import click
 from src.attestation_client import AttestationClient, AttestationClientParameters, Verifier
 from src.isolation import IsolationType
 from src.logger import Logger
 from src.snp import AttestationReport
-import json
+from src.vbs import VbsVmReport
 from src.quote import Quote
+import json
 
 
 DEFAULT_ENDPOINT = 'https://sharedweu.weu.attest.azure.net/attest/SevSnpVm?api-version=2022-08-01'
@@ -66,6 +72,17 @@ def handle_hardware_report(attestation_client):
     except Exception as e:
       logger.error(f"Failed to parse the TD quote: {e}")
       return
+  elif evidence.type == IsolationType.VBS:
+    try:
+      vbs_report = VbsVmReport.deserialize(evidence.hardware_report)
+      print(vbs_report)
+      logger.info("Got VBS report successfully!")
+    except Exception as e:
+      logger.error(f"Failed to parse the VBS report: {e}")
+      return
+  else:
+    logger.error(f"Unsupported hardware report type: {evidence.type}")
+    return
 
   # Store hardware report
   file_path = 'report.bin'
