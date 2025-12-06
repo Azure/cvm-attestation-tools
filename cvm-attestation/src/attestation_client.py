@@ -92,7 +92,7 @@ class AttestationClientParameters:
     
      # Validate the verifier
     if not isinstance(verifier, Verifier):
-      raise ValueError(f"Unsupported isolation type: {verifier}. Supported types: {list(Verifier)}")
+      raise ValueError(f"Unsupported verifier type: {verifier}. Supported types: {list(Verifier)}")
 
     self.endpoint = endpoint
     self.verifier = verifier
