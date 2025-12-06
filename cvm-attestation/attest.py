@@ -19,6 +19,7 @@ def parse_config_file(filename):
 ISOLATION_TYPE_LOOKUP = {
   'maa_tdx': IsolationType.TDX,
   'maa_snp': IsolationType.SEV_SNP,
+  'maa_trusted_launch': IsolationType.TRUSTED_LAUNCH,
   'ita': IsolationType.TDX,
   'default': IsolationType.UNDEFINED
 }
@@ -27,6 +28,7 @@ ISOLATION_TYPE_LOOKUP = {
 ATTESTATION_PROVIDER_LOOKUP = {
   'maa_tdx': Verifier.MAA,
   'maa_snp': Verifier.MAA,
+  'maa_trusted_launch': Verifier.MAA,
   'ita': Verifier.ITA,
   'default': Verifier.UNDEFINED
 }
@@ -103,6 +105,7 @@ def attest(c, t, s):
   client_parameters = AttestationClientParameters(
     endpoint=endpoint,
     verifier=provider,
+    isolation_type=isolation_type,
     claims=claims,
     api_key=api_key
   )
