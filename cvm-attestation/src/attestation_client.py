@@ -9,7 +9,7 @@ from enum import Enum
 from base64 import urlsafe_b64decode
 from src.snp import AttestationReport
 from src.os_info import OsInfo
-from src.isolation import IsolationType, Isolation, TdxEvidence, SnpEvidence
+from src.isolation import IsolationType, Isolation, TdxEvidence, SnpEvidence, TrustedLaunchEvidence
 from src.logger import Logger
 from src.report_parser import ReportParser
 from src.imds_client import ImdsClient
@@ -31,11 +31,12 @@ PROTOCOL_VERSION = "2.0"
 
 
 class GuestAttestationParameters:
-  def __init__(self, os_info=None, tcg_logs=None, tpm_info=None, isolation=None):
+  def __init__(self, os_info=None, tcg_logs=None, tpm_info=None, isolation=None, user_claims = None):
     self.os_info = os_info
     self.tcg_logs = tcg_logs
     self.tpm_info = tpm_info
     self.isolation = isolation
+    self.user_claims = user_claims
   
   def toJson(self):
     return json.dumps({
@@ -46,7 +47,7 @@ class GuestAttestationParameters:
       'OSVersionMinor': str(self.os_info.minor_version),
       'OSBuild': Encoder.base64_encode_string(self.os_info.build),
       'TcgLogs': Encoder.base64_encode(self.tcg_logs),
-      'ClientPayload': Encoder.base64_encode_string(""),
+      'ClientPayload': self.user_claims if self.user_claims else {},
       'TpmInfo': self.tpm_info.get_values(),
       'IsolationInfo': self.isolation.get_values()
     })
@@ -84,16 +85,20 @@ class Verifier(Enum):
 
 
 class AttestationClientParameters:
-  def __init__(self, endpoint: str, verifier: Verifier, claims = None, api_key = None):
+  def __init__(self, endpoint: str, verifier: Verifier, isolation_type: IsolationType, claims = None, api_key = None):
+    # Validate the isolation type
+    if not isinstance(isolation_type, IsolationType):
+      raise ValueError(f"Unsupported isolation type: {isolation_type}. Supported types: {list(IsolationType)}")
+    
      # Validate the verifier
     if not isinstance(verifier, Verifier):
-      raise ValueError(f"Unsupported isolation type: {verifier}. Supported types: {list(Verifier)}")
+      raise ValueError(f"Unsupported verifier type: {verifier}. Supported types: {list(Verifier)}")
 
     self.endpoint = endpoint
     self.verifier = verifier
     self.api_key = api_key
+    self.isolation_type = isolation_type
     self.user_claims = claims
-
 
 class UnsupportedReportTypeException(Exception):
   pass
@@ -108,15 +113,10 @@ class AttestationClient():
     self.parameters = parameters
     self.log = logger
 
-     # Extract Hardware Report and Runtime Data
-    tss_wrapper = TssWrapper(self.log)
-    hcl_report = tss_wrapper.get_hcl_report(self.parameters.user_claims)
-    report_type = ReportParser.extract_report_type(hcl_report)
-
     if verifier == Verifier.MAA:
-      self.provider = MAAProvider(logger, report_type, endpoint)
+      self.provider = MAAProvider(logger, parameters.isolation_type, endpoint)
     elif verifier == Verifier.ITA:
-      self.provider = ITAProvider(logger, report_type, endpoint, api_key)
+      self.provider = ITAProvider(logger, parameters.isolation_type, endpoint, api_key)
     else:
       self.provider = None
 
@@ -174,22 +174,31 @@ class AttestationClient():
       try:
         self.log.info('Attesting Guest Evidence...')
 
-        hardware_evidence = self.get_hardware_evidence()
-        hw_report = hardware_evidence.hardware_report   # td_quote or snp report
-        runtime_data = hardware_evidence.runtime_data
-        report_type = hardware_evidence.type
-
         # get the isolation information for the platform
-        hw_evidence = ""
-        imds_client = ImdsClient(self.log)
-        if report_type == IsolationType.TDX:
-          hw_evidence = TdxEvidence(hw_report, runtime_data)
-        elif report_type == IsolationType.SEV_SNP:
-          cert_chain = imds_client.get_vcek_certificate()
-          hw_evidence = SnpEvidence(hw_report, runtime_data, cert_chain)
-        else:
-          self.log.info('Invalid Hardware Report Type')
+        isolation_type = self.parameters.isolation_type
+        self.log.info(f'Processing {isolation_type.name} attestation...')
 
+        # Get isolation evidence based on type
+        if isolation_type == IsolationType.TRUSTED_LAUNCH:
+          # Trusted Launch specific code
+          isolation_evidence = TrustedLaunchEvidence()
+
+        elif isolation_type in [IsolationType.SEV_SNP, IsolationType.TDX]:
+          # Get hardware evidence for CVM types (SEV_SNP and TDX)
+          hardware_evidence = self.get_hardware_evidence()
+          hw_report = hardware_evidence.hardware_report
+          runtime_data = hardware_evidence.runtime_data
+          
+          if isolation_type == IsolationType.SEV_SNP:
+            imds_client = ImdsClient(self.log)
+            cert_chain = imds_client.get_vcek_certificate()
+            isolation_evidence = SnpEvidence(hw_report, runtime_data, cert_chain)
+          else:  # TDX
+            isolation_evidence = TdxEvidence(hw_report, runtime_data)
+
+        else:
+          self.log.error(f'Unsupported isolation type: {isolation_type}')
+          raise UnsupportedReportTypeException(f"Unsupported isolation type: {isolation_type}")
 
         # Collect guest attestation parameters
         os_info = OsInfo()
@@ -201,8 +210,8 @@ class AttestationClient():
         key, key_handle, tpm = tss_wrapper.get_ephemeral_key(os_info.pcr_list)
         tpm_info = TpmInfo(aik_cert, aik_pub, pcr_quote, sig, pcr_values, key)
         tcg_logs = get_measurements(os_info.type)
-        isolation = Isolation(report_type, hw_evidence)
-        param = GuestAttestationParameters(os_info, tcg_logs, tpm_info, isolation)
+        isolation = Isolation(self.parameters.isolation_type, isolation_evidence)
+        param = GuestAttestationParameters(os_info, tcg_logs, tpm_info, isolation, self.parameters.user_claims)
 
         # Calls attestation provider with the guest evidence
         request = {

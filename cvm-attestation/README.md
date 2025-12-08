@@ -133,6 +133,12 @@ sudo attest  --c config_sample.json --t Guest
 sudo attest  --c config_snp.json
 ```
 
+### Trusted Launch (MAA Only)
+```
+sudo attest  --c config_trusted_launch.json --t Guest
+```
+On any Azure VM running "Trusted Launch", this will generate a MAA attestation token.  There will be no platform evidence included -- even if running "Trusted Launch" on a "Confidential Virtual Machine".
+
 ### TDX with MAA
 ```
 sudo attest  --c config_tdx.json

@@ -67,9 +67,15 @@ class OsInfo:
 
   # Function to parse NAME and VERSION_ID
   def parse_linux_os_info(self, os_info):
-    self.distro_name = os_info.get('NAME')
-    version = os_info.get('VERSION_ID')
-    self.major_version, self.minor_version = version.strip().split('.', 1)
+    self.distro_name = os_info.get('NAME', 'Unknown')
+    version = os_info.get('VERSION_ID', '0.0')
+    
+    version = version.strip()
+    
+    # Split version and handle different formats
+    version_parts = version.split('.', 1)
+    self.major_version = version_parts[0] if version_parts[0] else "0"
+    self.minor_version = version_parts[1] if len(version_parts) > 1 else "0"
 
 
   def get_linux_os_info(self):

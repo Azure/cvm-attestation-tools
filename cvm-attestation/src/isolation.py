@@ -73,6 +73,20 @@ class TdxEvidence(Evidence):
     }
 
 
+class TrustedLaunchEvidence(Evidence):
+  def __init__(self):
+    pass
+
+  def validate(self):
+    # Add validation logic
+    pass
+
+  def get_evidence(self):
+    return {
+      "Type": "TrustedLaunch"
+    }
+
+
 class Isolation:
   def __init__(self, isolation_type=IsolationType.UNDEFINED, evidence: Evidence = None):
     self.isolation_type = isolation_type
