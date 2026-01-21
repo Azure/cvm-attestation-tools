@@ -26,7 +26,6 @@ def read_report():
   client_parameters = AttestationClientParameters(
     endpoint=DEFAULT_ENDPOINT,
     verifier=Verifier.MAA,
-    isolation_type=IsolationType,
     claims='',
     api_key=None
   )
