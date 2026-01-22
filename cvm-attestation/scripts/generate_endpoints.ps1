@@ -10,5 +10,4 @@ $endpointsJson = [ordered]@{}
 foreach ($endpoint in $endpoints) {
   $endpointsJson[($endpoint.Location -replace ' ', '').ToLower()] = $endpoint.AttestUri
 }
-$endpointsJson | ConvertTo-Json > attestation_uri_table_BadFormat.json
-(Get-Content "attestation_uri_table_BadFormat.json") -replace "  ", " " | Set-Content "attestation_uri_table.json"
+$endpointsJson | ConvertTo-Json | ForEach-Object { $_ -replace "  ", " " } | Set-Content "attestation_uri_table.json"

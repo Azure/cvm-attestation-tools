@@ -51,8 +51,12 @@ def get_endpoint(logger, isolation_type: IsolationType, attestation_type: str):
   """
   imds_client = ImdsClient(logger)
   region = imds_client.get_region_from_compute_metadata()
-  region = region.replace(" ", "").lower()
+  if region is None:
+    logger.error("Failed to retrieve region from IMDS; cannot determine attestation endpoint.")
+    raise AttestException("Region could not be determined from instance metadata.")
   
+  region = region.replace(" ", "").lower()
+
   current_dir = os.getcwd()
   if "usgov" in region:
     filename = 'attestation_uri_table_usgov.json'
@@ -61,7 +65,7 @@ def get_endpoint(logger, isolation_type: IsolationType, attestation_type: str):
   endpoint_file_path = os.path.join(current_dir, filename)
 
   endpoint_selector = EndpointSelector(endpoint_file_path, logger)
-  return endpoint_selector.get_attestation_endpoint(isolation_type, attestation_type)
+  return endpoint_selector.get_attestation_endpoint(isolation_type, attestation_type, region)
 
 
 @click.command()
