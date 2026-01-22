@@ -14,7 +14,8 @@ from src.isolation import IsolationType
 MOCK_ENDPOINTS = {
   "West Europe": "https://europe_endpoint.test.net",
   "East US": "https://eastus_endpoint.test.net",
-  "Japan East": "https://japan_east_endpoint.test.net"
+  "Japan East": "https://japan_east_endpoint.test.net",
+  "USGov Virginia": "https://usgovvirginia_endpoint.test.us"
 }
 
 # Fixture to create an EndpointSelector instance with mock data
@@ -96,4 +97,16 @@ def test_get_attestation_guest_endpoint(endpoint_selector, mocker):
   assert actual == expected
 
   actual = endpoint_selector.get_attestation_endpoint(IsolationType.TDX, "guest", "westeurope")
+  assert actual == expected
+
+def test_get_attestation_guest_endpoint_USGOV(endpoint_selector, mocker):
+  mock_imds_client = mocker.patch("src.endpoint_selector.ImdsClient")
+  mock_imds_instance = mock_imds_client.return_value
+  mock_imds_instance.get_region_from_compute_metadata.return_value = "USGov Virginia"
+
+  actual = endpoint_selector.get_attestation_endpoint(IsolationType.SEV_SNP, "guest", "USGov Virginia")
+  expected = MOCK_ENDPOINTS["USGov Virginia"] + "/attest/AzureGuest?api-version=2020-10-01"
+  assert actual == expected
+
+  actual = endpoint_selector.get_attestation_endpoint(IsolationType.TDX, "guest", "USGov Virginia")
   assert actual == expected
