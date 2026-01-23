@@ -89,20 +89,18 @@ class EndpointSelector:
     return random.choice(list(self.endpoints.values()))
 
 
-  def get_attestation_endpoint(self, isolation_type: IsolationType, attestation_type: str):
+  def get_attestation_endpoint(self, isolation_type: IsolationType, attestation_type: str, region: str):
     """
     Get the attestation endpoint based on the region.
 
     Parameters:
     isolation_type (IsolationType): Isolation type.
     attestation_type (str): Attestation type.
-
+    region (str): Region name.
     Returns:
     str: Attestation endpoint.
     """
 
-    imds_client = ImdsClient(self.logger)
-    region = imds_client.get_region_from_compute_metadata()
     base_url = self._get_endpoint(region)
 
     type = attestation_type.lower()

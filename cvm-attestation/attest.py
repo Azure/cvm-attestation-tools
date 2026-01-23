@@ -7,6 +7,7 @@ import hashlib
 from src.attestation_client import AttestationClient, AttestationClientParameters, Verifier
 from src.isolation import IsolationType
 from src.logger import Logger
+from src.imds_client import ImdsClient
 from src.endpoint_selector import EndpointSelector
 import os
 
@@ -48,12 +49,23 @@ def get_endpoint(logger, isolation_type: IsolationType, attestation_type: str):
   """
   Get the base URL for the attestation endpoint based on the region.
   """
+  imds_client = ImdsClient(logger)
+  region = imds_client.get_region_from_compute_metadata()
+  if region is None:
+    logger.error("Failed to retrieve region from IMDS; cannot determine attestation endpoint.")
+    raise AttestException("Region could not be determined from instance metadata.")
+  
+  region = region.replace(" ", "").lower()
+
   current_dir = os.getcwd()
-  filename = 'attestation_uri_table.json'
+  if "usgov" in region:
+    filename = 'attestation_uri_table_usgov.json'
+  else:
+    filename = 'attestation_uri_table.json'
   endpoint_file_path = os.path.join(current_dir, filename)
 
   endpoint_selector = EndpointSelector(endpoint_file_path, logger)
-  return endpoint_selector.get_attestation_endpoint(isolation_type, attestation_type)
+  return endpoint_selector.get_attestation_endpoint(isolation_type, attestation_type, region)
 
 
 @click.command()
