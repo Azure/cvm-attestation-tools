@@ -9,9 +9,9 @@ function Install-Chocolatey {
 
 function Install-Python {
     Write-Output "Starting Install-Python..."
-    choco install -y python --version 3.10.2
+    choco install -y python --version 3.12.0
 
-    $pythonPath = "C:\Python310"
+    $pythonPath = "C:\Python312"
     $env:PATH = "$pythonPath;" + $env:PATH
 
     python.exe -m pip install --upgrade pip

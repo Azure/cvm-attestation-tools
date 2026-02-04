@@ -20,10 +20,10 @@ function Install-Git {
 function Install-Python {
     Write-Output "Starting Install-Python..."
 
-    C:\ProgramData\chocolatey\bin\choco.exe install -y python --version 3.10.2
+    C:\ProgramData\chocolatey\bin\choco.exe install -y python --version 3.12.0
 
     # Define the path you want to append
-    $pythonPath = "C:\Python310"
+    $pythonPath = "C:\Python312"
 
     # Append the new path to the existing PATH variable
     $env:PATH += ";$pythonPath"
@@ -42,7 +42,7 @@ function Install-AttestationApp {
     python.exe setup.py install
     
      # Define the path you want to append
-    $attestPath = "C:\Python310\Scripts"
+    $attestPath = "C:\Python312\Scripts"
 
     # Append the new path to the existing PATH variable
     $env:PATH += ";$attestPath"
