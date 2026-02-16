@@ -20,7 +20,7 @@ function Install-Git {
 function Install-Python {
     Write-Output "Starting Install-Python..."
 
-    C:\ProgramData\chocolatey\bin\choco.exe install -y python --version 3.12.0
+    C:\ProgramData\chocolatey\bin\choco.exe install -y python --version 3.12.8
 
     # Define the path you want to append
     $pythonPath = "C:\Python312"
