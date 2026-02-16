@@ -54,18 +54,18 @@ overwrite existing installations.
 
 ...
 
-Installed c:\python310\lib\site-packages\attest-0.1-py3.10.egg
+Installed c:\python312\lib\site-packages\attest-0.1-py3.12.egg
 Processing dependencies for attest==0.1
 Searching for click==8.1.8
 Best match: click 8.1.8
 Adding click 8.1.8 to easy-install.pth file
 
-Using c:\python310\lib\site-packages
+Using c:\python312\lib\site-packages
 Searching for colorama==0.4.6
 Best match: colorama 0.4.6
 Adding colorama 0.4.6 to easy-install.pth file
 
-Using c:\python310\lib\site-packages
+Using c:\python312\lib\site-packages
 Finished processing dependencies for attest==0.1
 ```
 > **NOTE:** Ensure there are no errors and verify that the tools are installed successfully by checking for the message `Finished processing dependencies for attest==0.1`.
@@ -102,7 +102,7 @@ Installing tpm2-tools and Python...
 
 ...
 
-Installed /usr/local/lib/python3.10/dist-packages/attest-0.1-py3.10.egg
+Installed /usr/local/lib/python3.12/dist-packages/attest-0.1-py3.12.egg
 Processing dependencies for attest==0.1
 Searching for click==8.0.3
 Best match: click 8.0.3

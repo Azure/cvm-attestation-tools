@@ -9,9 +9,9 @@ function Install-Chocolatey {
 
 function Install-Python {
     Write-Output "Starting Install-Python..."
-    choco install -y python --version 3.10.2
+    choco install -y python --version 3.12.0
 
-    $pythonPath = "C:\Python310"
+    $pythonPath = "C:\Python312"
     $env:PATH = "$pythonPath;" + $env:PATH
 
     python.exe -m pip install --upgrade pip
@@ -40,7 +40,7 @@ function Build-And-Install {
     }
 
     # Update PATH for attest CLI
-    $attestPath = "C:\Python310\Scripts"
+    $attestPath = "C:\Python312\Scripts"
     $env:PATH = "$attestPath;" + $env:PATH
 
     Write-Output "Building and Installing...Done"
