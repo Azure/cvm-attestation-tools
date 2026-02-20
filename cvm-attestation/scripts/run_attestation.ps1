@@ -29,6 +29,8 @@ function Install-Python {
     $env:PATH += ";$pythonPath"
 
     python.exe -m pip install --upgrade pip
+    python.exe -m pip install --upgrade setuptools
+    python.exe -m pip install setuptools_scm build
 
     Write-Output "Starting Install-Python...Done"
 }
