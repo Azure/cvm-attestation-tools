@@ -10,7 +10,6 @@ from src.logger import Logger
 from src.imds_client import ImdsClient
 from src.endpoint_selector import EndpointSelector
 import os
-import sys
 
 
 def parse_config_file(filename):
@@ -58,7 +57,7 @@ def get_endpoint(logger, isolation_type: IsolationType, attestation_type: str):
   
   region = region.replace(" ", "").lower()
 
-  current_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+  current_dir = os.getcwd()
   if "usgov" in region:
     filename = 'attestation_uri_table_usgov.json'
   else:
