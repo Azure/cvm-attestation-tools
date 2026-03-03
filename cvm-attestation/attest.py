@@ -58,12 +58,26 @@ def get_endpoint(logger, isolation_type: IsolationType, attestation_type: str):
   
   region = region.replace(" ", "").lower()
 
-  current_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
   if "usgov" in region:
     filename = 'attestation_uri_table_usgov.json'
   else:
     filename = 'attestation_uri_table.json'
-  endpoint_file_path = os.path.join(current_dir, filename)
+
+  search_dirs = [
+    os.path.dirname(os.path.abspath(__file__)),
+    os.path.dirname(os.path.abspath(sys.argv[0])),
+    os.getcwd()
+  ]
+
+  endpoint_file_path = None
+  for d in search_dirs:
+    candidate = os.path.join(d, filename)
+    if os.path.isfile(candidate):
+      endpoint_file_path = candidate
+      break
+
+  if endpoint_file_path is None:
+    raise AttestException(f"Could not find {filename} in any of: {search_dirs}")
 
   endpoint_selector = EndpointSelector(endpoint_file_path, logger)
   return endpoint_selector.get_attestation_endpoint(isolation_type, attestation_type, region)
