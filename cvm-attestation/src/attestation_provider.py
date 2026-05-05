@@ -50,11 +50,12 @@ class MAAProvider(IAttestationProvider):
         f"Unsupported isolation type: {isolation}. Supported types: {list(IsolationType)}"
       )
 
-     # Validate the endpoint
+     # Validate the endpoint - HTTPS is required so attestation tokens are
+     # delivered over an authenticated, encrypted channel.
     parsed_endpoint = urlparse(endpoint)
-    if not parsed_endpoint.scheme or not parsed_endpoint.netloc:
+    if parsed_endpoint.scheme != 'https' or not parsed_endpoint.netloc:
       raise ValueError(
-        f"Invalid endpoint: {endpoint}. Endpoint must be a valid URL."
+        f"Invalid endpoint: {endpoint}. Endpoint must be a valid HTTPS URL."
       )
 
     self.log = logger
@@ -328,10 +329,11 @@ class ITAProvider(IAttestationProvider):
     if not isinstance(isolation, IsolationType):
       raise ValueError(f"Unsupported isolation type: {isolation}. Supported types: {list(IsolationType)}")
 
-      # Validate the endpoint
+    # Validate the endpoint - HTTPS is required so attestation tokens and
+    # the api_key are sent over an authenticated, encrypted channel.
     parsed_endpoint = urlparse(endpoint)
-    if not parsed_endpoint.scheme or not parsed_endpoint.netloc:
-      raise ValueError(f"Invalid endpoint: {endpoint}. Endpoint must be a valid URL.")
+    if parsed_endpoint.scheme != 'https' or not parsed_endpoint.netloc:
+      raise ValueError(f"Invalid endpoint: {endpoint}. Endpoint must be a valid HTTPS URL.")
 
     self.log = logger
     self.isolation = isolation

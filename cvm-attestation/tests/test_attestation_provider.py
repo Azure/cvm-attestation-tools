@@ -22,7 +22,7 @@ def maa_provider(mocker):
   mocker.patch.object(logger, 'info')
   mocker.patch.object(logger, 'error')
 
-  endpoint = "http://someendpoint.com/api"
+  endpoint = "https://someendpoint.com/api"
   return MAAProvider(logger, IsolationType.UNDEFINED, endpoint)
 
 
@@ -35,10 +35,20 @@ def test_invalid_endpoint_provided():
   assert "Invalid endpoint" in str(excinfo.value)
 
 
+def test_http_endpoint_is_rejected():
+  # HTTPS is required so attestation tokens are not delivered in cleartext.
+  isolation = IsolationType.TDX
+  http_endpoint = "http://someendpoint.com/api"
+
+  with pytest.raises(ValueError) as excinfo:
+      MAAProvider(default_logger, isolation, http_endpoint)
+  assert "HTTPS" in str(excinfo.value)
+
+
 def test_maa_provider_invalid_isolation_type():
   
   invalid_isolation = "invalid_type"
-  endpoint = "http://someendpoint.com/api"
+  endpoint = "https://someendpoint.com/api"
 
   with pytest.raises(ValueError) as excinfo:
       MAAProvider(default_logger, invalid_isolation, endpoint)
