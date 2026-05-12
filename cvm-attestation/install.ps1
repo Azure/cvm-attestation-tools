@@ -55,11 +55,11 @@ function Test-Python312Installed {
     try {
         $pythonVersion = python.exe --version 2>&1
         if ($LASTEXITCODE -eq 0 -and $pythonVersion -match "Python 3\.12") {
-            Write-Output "Python 3.12 is already installed: $pythonVersion"
+            Write-Host "Python 3.12 is already installed: $pythonVersion"
             return $true
         }
     } catch {
-        Write-Output "Python not found in PATH"
+        Write-Host "Python not found in PATH"
     }
     return $false
 }
