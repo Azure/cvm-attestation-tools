@@ -22,10 +22,13 @@ def read_report():
   """
   logger = Logger('logger').get_logger()
 
-  # Initialize attestation client
+  # Initialize attestation client. read_report only collects the hardware
+  # evidence from the vTPM and auto-detects the isolation type from the HCL
+  # report, so the constructor's isolation_type is just a placeholder here.
   client_parameters = AttestationClientParameters(
     endpoint=DEFAULT_ENDPOINT,
     verifier=Verifier.MAA,
+    isolation_type=IsolationType.UNDEFINED,
     claims='',
     api_key=None
   )
