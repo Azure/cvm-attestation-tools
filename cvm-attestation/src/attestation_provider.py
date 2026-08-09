@@ -155,34 +155,39 @@ class MAAProvider(IAttestationProvider):
     try:
       claims = jwt.decode(encoded_token, options={"verify_signature": False})
 
-      if claims.get("x-ms-compliance-status") == "azure-compliant-cvm":
-        self.log.info(f"Claims:")
-        self.log.info(
-          f"Attestation Type: {claims.get('x-ms-attestation-type', 'N/A')}"
-        )
-        self.log.info(f"Status: {claims.get('x-ms-compliance-status', 'N/A')}")
-        self.log.info(
-          f"SNP Bootloader SVN: {claims.get('x-ms-sevsnpvm-bootloader-svn', 'N/A')}"
-        )
-        self.log.info(
-          f"SNP Guest SVN: {claims.get('x-ms-sevsnpvm-guestsvn', 'N/A')}"
-        )
-        self.log.info(
-          f"SNP Microcode SVN: {claims.get('x-ms-sevsnpvm-microcode-svn', 'N/A')}"
-        )
-        self.log.info(
-          f"SNP Firmware SVN: {claims.get('x-ms-sevsnpvm-snpfw-svn', 'N/A')}"
-        )
-        self.log.info(
-          f"SNP TEE SVN: {claims.get('x-ms-sevsnpvm-tee-svn', 'N/A')}"
-        )
-        self.log.info(
-          f"Report Data: {claims.get('x-ms-sevsnpvm-reportdata', 'N/A')}"
-        )
-        self.log.info(
-          f"User Claims Digest: {claims.get('x-ms-runtime', {}).get('user-data', 'N/A')}"
-        )
+      self.log.info(f"Compliance Status: {claims.get('x-ms-compliance-status', 'N/A')}")
+      self.log.info(f"Claims:")
+      self.log.info(
+        f"Attestation Type: {claims.get('x-ms-attestation-type', 'N/A')}"
+      )
+      self.log.info(f"Status: {claims.get('x-ms-compliance-status', 'N/A')}")
+      self.log.info(
+        f"SNP Bootloader SVN: {claims.get('x-ms-sevsnpvm-bootloader-svn', 'N/A')}"
+      )
+      self.log.info(
+        f"SNP Guest SVN: {claims.get('x-ms-sevsnpvm-guestsvn', 'N/A')}"
+      )
+      self.log.info(
+        f"SNP Microcode SVN: {claims.get('x-ms-sevsnpvm-microcode-svn', 'N/A')}"
+      )
+      self.log.info(
+        f"SNP Firmware SVN: {claims.get('x-ms-sevsnpvm-snpfw-svn', 'N/A')}"
+      )
+      self.log.info(
+        f"SNP TEE SVN: {claims.get('x-ms-sevsnpvm-tee-svn', 'N/A')}"
+      )
+      self.log.info(
+        f"Report Data: {claims.get('x-ms-sevsnpvm-reportdata', 'N/A')}"
+      )
+      self.log.info(
+        f"User Claims Digest: {claims.get('x-ms-runtime', {}).get('user-data', 'N/A')}"
+      )
+      if claims.get("x-ms-compliance-status", "N/A") == "azure-compliant-cvm":
         self.log.info("Attested Platform Successfully!!")
+      else:
+        self.log.warning(
+          "Attestation failed. The platform is not compliant with Azure's security requirements."
+        )
     except Exception as e:
       raise AttestationProviderException(
         f"Exception while decoding jwt. Exception: {e}"
@@ -202,21 +207,26 @@ class MAAProvider(IAttestationProvider):
     try:
       claims = jwt.decode(encoded_token, options={"verify_signature": False})
 
-      if claims.get("x-ms-compliance-status") == "azure-compliant-cvm":
-        self.log.info(f"Claims:")
-        self.log.info(
-          f"Attestation Type: {claims.get('x-ms-attestation-type', 'N/A')}"
-        )
-        self.log.info(f"TCB Status: {claims.get('attester_tcb_status', 'N/A')}")
-        self.log.info(f"TCB SVN : {claims.get('tdx_tee_tcb_svn', 'N/A')}")
-        self.log.info(
-          f"TPM Persisted: {claims.get('x-ms-runtime', {}).get('vm-configuration', {}).get('tpm-persisted', 'N/A')}"
-        )
-        self.log.info(f"Report Data: {claims.get('tdx_report_data', 'N/A')}")
-        self.log.info(
-          f"User Claims Digest: {claims.get('x-ms-runtime', {}).get('user-data', 'N/A')}"
-        )
+      self.log.info(f"Compliance Status: {claims.get('x-ms-compliance-status', 'N/A')}")
+      self.log.info(f"Claims:")
+      self.log.info(
+        f"Attestation Type: {claims.get('x-ms-attestation-type', 'N/A')}"
+      )
+      self.log.info(f"TCB Status: {claims.get('attester_tcb_status', 'N/A')}")
+      self.log.info(f"TCB SVN : {claims.get('tdx_tee_tcb_svn', 'N/A')}")
+      self.log.info(
+        f"TPM Persisted: {claims.get('x-ms-runtime', {}).get('vm-configuration', {}).get('tpm-persisted', 'N/A')}"
+      )
+      self.log.info(f"Report Data: {claims.get('tdx_report_data', 'N/A')}")
+      self.log.info(
+        f"User Claims Digest: {claims.get('x-ms-runtime', {}).get('user-data', 'N/A')}"
+      )
+      if claims.get("x-ms-compliance-status", "N/A") == "azure-compliant-cvm":
         self.log.info("Attested Platform Successfully!!")
+      else:
+        self.log.warning(
+          "Attestation failed. The platform is not compliant with Azure's security requirements."
+        )
     except Exception as e:
       raise AttestationProviderException(
         f"Exception while decoding jwt. Exception: {e}"
@@ -303,40 +313,45 @@ class MAAProvider(IAttestationProvider):
       claims = jwt.decode(encoded_token, options={"verify_signature": False})
 
       isolation_tee = claims.get("x-ms-isolation-tee", {})
-      if isolation_tee.get("x-ms-compliance-status") == "azure-compliant-cvm":
-        self.log.info(f"Claims:")
+      self.log.info(f"Compliance Status: {claims.get('x-ms-compliance-status', 'N/A')}")
+      self.log.info(f"Claims:")
+      self.log.info(
+        f"Attestation Type: {isolation_tee.get('x-ms-attestation-type', 'N/A')}"
+      )
+      self.log.info(
+        f"Status: {isolation_tee.get('x-ms-compliance-status', 'N/A')}"
+      )
+      self.log.info(
+        f"SNP Bootloader SVN: {isolation_tee.get('x-ms-sevsnpvm-bootloader-svn', 'N/A')}"
+      )
+      self.log.info(
+        f"SNP Guest SVN: {isolation_tee.get('x-ms-sevsnpvm-guestsvn', 'N/A')}"
+      )
+      self.log.info(
+        f"SNP Microcode SVN: {isolation_tee.get('x-ms-sevsnpvm-microcode-svn', 'N/A')}"
+      )
+      self.log.info(
+        f"SNP Firmware SVN: {isolation_tee.get('x-ms-sevsnpvm-snpfw-svn', 'N/A')}"
+      )
+      self.log.info(
+        f"SNP TEE SVN: {isolation_tee.get('x-ms-sevsnpvm-tee-svn', 'N/A')}"
+      )
+      self.log.info(
+        f"Report Data: {isolation_tee.get('x-ms-sevsnpvm-reportdata', 'N/A')}"
+      )
+      self.log.info(
+        f"User Claims Digest: {isolation_tee.get('x-ms-runtime', {}).get('user-data', 'N/A')}"
+      )
+      if "x-ms-azurevm-os-provisioning" in claims:
         self.log.info(
-          f"Attestation Type: {isolation_tee.get('x-ms-attestation-type', 'N/A')}"
+          f"OS provisioning claims: {claims.get('x-ms-azurevm-os-provisioning', 'N/A')}"
         )
-        self.log.info(
-          f"Status: {isolation_tee.get('x-ms-compliance-status', 'N/A')}"
+      if claims.get("x-ms-compliance-status", "N/A") == "azure-compliant-cvm":
+        self.log.info("Attested Platform Successfully!!")
+      else:
+        self.log.warning(
+          "Attestation failed. The platform is not compliant with Azure's security requirements."
         )
-        self.log.info(
-          f"SNP Bootloader SVN: {isolation_tee.get('x-ms-sevsnpvm-bootloader-svn', 'N/A')}"
-        )
-        self.log.info(
-          f"SNP Guest SVN: {isolation_tee.get('x-ms-sevsnpvm-guestsvn', 'N/A')}"
-        )
-        self.log.info(
-          f"SNP Microcode SVN: {isolation_tee.get('x-ms-sevsnpvm-microcode-svn', 'N/A')}"
-        )
-        self.log.info(
-          f"SNP Firmware SVN: {isolation_tee.get('x-ms-sevsnpvm-snpfw-svn', 'N/A')}"
-        )
-        self.log.info(
-          f"SNP TEE SVN: {isolation_tee.get('x-ms-sevsnpvm-tee-svn', 'N/A')}"
-        )
-        self.log.info(
-          f"Report Data: {isolation_tee.get('x-ms-sevsnpvm-reportdata', 'N/A')}"
-        )
-        self.log.info(
-          f"User Claims Digest: {isolation_tee.get('x-ms-runtime', {}).get('user-data', 'N/A')}"
-        )
-        if "x-ms-azurevm-os-provisioning" in claims:
-          self.log.info(
-            f"OS provisioning claims: {claims.get('x-ms-azurevm-os-provisioning', 'N/A')}"
-          )
-        self.log.info("Attested Guest Successfully!!")
     except Exception as e:
       raise AttestationProviderException(
         f"Exception while decoding jwt. Exception: {e}"
@@ -347,34 +362,39 @@ class MAAProvider(IAttestationProvider):
       claims = jwt.decode(encoded_token, options={"verify_signature": False})
 
       isolation_tee = claims.get("x-ms-isolation-tee", {})
-      if isolation_tee.get("x-ms-compliance-status") == "azure-compliant-cvm":
-        self.log.info(f"Claims:")
+      self.log.info(f"Compliance Status: {claims.get('x-ms-compliance-status', 'N/A')}")
+      self.log.info(f"Claims:")
+      self.log.info(
+        f"Attestation Type: {isolation_tee.get('x-ms-attestation-type', 'N/A')}"
+      )
+      self.log.info(
+        f"Status: {isolation_tee.get('x-ms-compliance-status', 'N/A')}"
+      )
+      self.log.info(f"MR SEAM: {isolation_tee.get('tdx_mrseam', 'N/A')}")
+      self.log.info(f"MR TD: {isolation_tee.get('tdx_report_data', 'N/A')}")
+      self.log.info(f"SEAM SVN: {isolation_tee.get('tdx_seamsvn', 'N/A')}")
+      self.log.info(
+        f"TD Attributes: {isolation_tee.get('tdx_td_attributes', 'N/A')}"
+      )
+      self.log.info(
+        f"TEE TCB SVN: {isolation_tee.get('tdx_tee_tcb_svn', 'N/A')}"
+      )
+      self.log.info(
+        f"Report Data: {isolation_tee.get('tdx_report_data', 'N/A')}"
+      )
+      self.log.info(
+        f"User Claims Digest: {isolation_tee.get('x-ms-runtime', {}).get('user-data', 'N/A')}"
+      )
+      if "x-ms-azurevm-os-provisioning" in claims:
         self.log.info(
-          f"Attestation Type: {isolation_tee.get('x-ms-attestation-type', 'N/A')}"
+          f"OS provisioning claims: {claims.get('x-ms-azurevm-os-provisioning', 'N/A')}"
         )
-        self.log.info(
-          f"Status: {isolation_tee.get('x-ms-compliance-status', 'N/A')}"
+      if claims.get("x-ms-compliance-status", "N/A") == "azure-compliant-cvm":
+        self.log.info("Attested Platform Successfully!!")
+      else:
+        self.log.warning(
+          "Attestation failed. The platform is not compliant with Azure's security requirements."
         )
-        self.log.info(f"MR SEAM: {isolation_tee.get('tdx_mrseam', 'N/A')}")
-        self.log.info(f"MR TD: {isolation_tee.get('tdx_report_data', 'N/A')}")
-        self.log.info(f"SEAM SVN: {isolation_tee.get('tdx_seamsvn', 'N/A')}")
-        self.log.info(
-          f"TD Attributes: {isolation_tee.get('tdx_td_attributes', 'N/A')}"
-        )
-        self.log.info(
-          f"TEE TCB SVN: {isolation_tee.get('tdx_tee_tcb_svn', 'N/A')}"
-        )
-        self.log.info(
-          f"Report Data: {isolation_tee.get('tdx_report_data', 'N/A')}"
-        )
-        self.log.info(
-          f"User Claims Digest: {isolation_tee.get('x-ms-runtime', {}).get('user-data', 'N/A')}"
-        )
-        if "x-ms-azurevm-os-provisioning" in claims:
-          self.log.info(
-            f"OS provisioning claims: {claims.get('x-ms-azurevm-os-provisioning', 'N/A')}"
-          )
-        self.log.info("Attested Guest Successfully!!")
     except Exception as e:
       raise AttestationProviderException(
         f"Exception while decoding jwt. Exception: {e}"
@@ -434,14 +454,19 @@ class ITAProvider(IAttestationProvider):
     try:
       claims = jwt.decode(encoded_token, options={"verify_signature": False})
 
-      if claims.get("attester_tcb_status") == "UpToDate":
-        self.log.info(f"Claims:")
-        self.log.info(f"Attestation Type: {claims.get('attester_type', 'N/A')}")
-        self.log.info(f"TCB Status: {claims.get('attester_tcb_status', 'N/A')}")
-        self.log.info(
-          f"TDX Debuggable : {claims.get('tdx_is_debuggable', 'N/A')}"
-        )
+      self.log.info(f"Attester TCB Status: {claims.get('attester_tcb_status', 'N/A')}")
+      self.log.info(f"Claims:")
+      self.log.info(f"Attestation Type: {claims.get('attester_type', 'N/A')}")
+      self.log.info(f"TCB Status: {claims.get('attester_tcb_status', 'N/A')}")
+      self.log.info(
+        f"TDX Debuggable : {claims.get('tdx_is_debuggable', 'N/A')}"
+      )
+      if claims.get("attester_tcb_status", "N/A") == "UpToDate":
         self.log.info("Attested Platform Successfully!!")
+      else:
+        self.log.warning(
+          "Attestation failed. The platform is not compliant with Azure's security requirements."
+        )
     except Exception as e:
       raise AttestationProviderException(
         f"Exception while decoding jwt. Exception: {e}"
