@@ -48,12 +48,13 @@ UBUNTU_VERSION=$(lsb_release -sr)
 
 #
 # Set pip install command based on Ubuntu version.
-# For Ubuntu 24.04, packages are managed different and pip upgrade is not supported.
+# Ubuntu 24.04 and later mark the system Python as externally managed (PEP 668),
+# so pip refuses system-wide installs and cannot upgrade the debian-packaged pip.
 # ERROR: Cannot uninstall pip 24.0, RECORD file not found. Hint: The package was installed by debian.
 #
 # TODO: Remove this conditional by packaging the tool using a virtual environment or pipx solution.
 #
-if [[ "$UBUNTU_VERSION" == "24.04" ]]; then
+if [[ "$(printf '%s\n24.04\n' "$UBUNTU_VERSION" | sort -V | head -n1)" == "24.04" ]]; then
     PIP_INSTALL_CMD="sudo -H pip3 install --break-system-packages"
 else
     PIP_INSTALL_CMD="sudo -H pip3 install"
@@ -66,6 +67,6 @@ retry_command $PIP_INSTALL_CMD -r requirements.txt
 
 # Install CLI tool
 echo "Installing CLI tool..."
-retry_command sudo python3 setup.py install
+retry_command $PIP_INSTALL_CMD .
 
 echo "Installation completed successfully."
