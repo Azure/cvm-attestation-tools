@@ -68,3 +68,27 @@ def test_attest_fails_with_incorrect_type_option():
   result = runner.invoke(attest, ['--c', 'somefile.json', '--t', 'Invalid'])
   assert result.exit_code != 0
   assert 'Invalid value for' in result.output
+
+def test_attest_uses_config_endpoint(mock_parse_config_file, mocker):
+  mock_get_endpoint = mocker.patch("attest.get_endpoint")
+  mock_params = mocker.patch("attest.AttestationClientParameters")
+  mocker.patch("attest.AttestationClient")
+
+  result = CliRunner().invoke(attest, ['--c', 'somefile.json', '--t', 'Guest'])
+
+  assert result.exit_code == 0, result.output
+  mock_get_endpoint.assert_not_called()
+  assert mock_params.call_args.kwargs['endpoint'] == MOCK_CONFIG['attestation_url']
+
+def test_attest_falls_back_to_regional_endpoint(mocker):
+  config = {k: v for k, v in MOCK_CONFIG.items() if k != 'attestation_url'}
+  mocker.patch("attest.parse_config_file", return_value=config)
+  mock_get_endpoint = mocker.patch("attest.get_endpoint", return_value="https://regional.test.com")
+  mock_params = mocker.patch("attest.AttestationClientParameters")
+  mocker.patch("attest.AttestationClient")
+
+  result = CliRunner().invoke(attest, ['--c', 'somefile.json', '--t', 'Guest'])
+
+  assert result.exit_code == 0, result.output
+  mock_get_endpoint.assert_called_once()
+  assert mock_params.call_args.kwargs['endpoint'] == "https://regional.test.com"
