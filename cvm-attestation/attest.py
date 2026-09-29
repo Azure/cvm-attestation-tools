@@ -104,7 +104,11 @@ def attest(c, t, s):
   logger.info(f"claims: {claims}")
 
   isolation_type = ISOLATION_TYPE_LOOKUP.get(provider_tag, ISOLATION_TYPE_LOOKUP['default'])
-  endpoint = get_endpoint(logger, isolation_type, attestation_type)
+  if endpoint:
+    logger.info("Using attestation endpoint from config file")
+  else:
+    logger.info("No attestation_url in config file; selecting regional endpoint")
+    endpoint = get_endpoint(logger, isolation_type, attestation_type)
   logger.info(f"Attestation endpoint: {endpoint}")
 
   # Log SHA512 of user provided claims
