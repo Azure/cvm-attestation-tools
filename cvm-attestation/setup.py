@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='attest',
-    version='0.1',
+    version='0.2',
     packages=find_packages(include=['src', 'src.*', 'external', 'external.*']),
     py_modules=['attest', 'read_report'],
     install_requires=[
