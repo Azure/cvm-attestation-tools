@@ -3,9 +3,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT license.
 
-import json
 from enum import Enum
 from src.encoder import Encoder
+from src.snp_utils import SnpFormatter
 
 
 class IsolationType(Enum):
@@ -35,13 +35,11 @@ class SnpEvidence(Evidence):
     pass
 
   def get_evidence(self):
-    hardware_evidence = {
-      'SnpReport': Encoder.base64url_encode(self.snp_report),
-      'VcekCertChain': Encoder.base64url_encode(self.vcek_cert)
-    }
-    hardware_evidence = json.dumps(hardware_evidence)
-    hardware_evidence = bytearray(hardware_evidence.encode('utf-8'))
-    encoded_hw_evidence = Encoder.base64url_encode(hardware_evidence)
+    # Use SnpFormatter to create consistent SNP evidence format
+    encoded_hw_evidence = SnpFormatter.format_snp_evidence(
+      self.snp_report,
+      self.vcek_cert
+    )
 
     return {
       "Type": "SevSnp",

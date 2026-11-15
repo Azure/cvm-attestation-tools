@@ -4,9 +4,9 @@
 # Licensed under the MIT license.
 
 from hashlib import sha512, sha256
-import json
 from external.TSS_MSR.src.Tpm import *
 from src.attestation_types import *
+from src.claims import claims_to_bytes
 from external.TSS_MSR.src.Crypt import Crypto as crypto
 from src.logger import Logger
 
@@ -121,8 +121,9 @@ class TssWrapper:
   def get_hcl_report(self, user_data):
     self.log.info('Getting hcl report from vTPM...')
 
-    if user_data:
-      hash_bytes = sha512(json.dumps(user_data).encode('utf-8')).digest()
+    claims_bytes = claims_to_bytes(user_data)
+    if claims_bytes:
+      hash_bytes = sha512(claims_bytes).digest()
       self.write_to_nv_index(HCL_USER_DATA_INDEX, hash_bytes)
 
     # read hcl report from nv index
@@ -319,6 +320,16 @@ class TssWrapper:
       tpm.close()
 
     return ""
+
+
+  def release_ephemeral_key(self, handle, tpm):
+    """
+    Releases an ephemeral key from get_ephemeral_key() that was not used for decryption.
+    """
+    try:
+      tpm.FlushContext(handle)
+    finally:
+      tpm.close()
 
 
   def cleanSlots(self, tpm, slotType):

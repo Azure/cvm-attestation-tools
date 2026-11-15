@@ -97,6 +97,9 @@ pip3 uninstall read_report -y
 ## attest
 Tool to attest the CVM
 
+### `--v` Verbose Logging Option
+Option to enable verbose logging (including the attestation evidence itself)
+
 ### `--c` Config File Option
 Option to set config file
 
@@ -199,6 +202,30 @@ CVM Configuration:
         TPM Enabled:  True
         User Data:  00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 ```
+
+## Using the attestation client from Python
+`AttestationClient` in `src/attestation_client.py` can also be used as a library:
+
+- `attest_guest()` / `attest_platform()` return the attestation token, or `None` if no token was received.
+- `attest_guest_detailed()` / `attest_platform_detailed()` return an `AttestationResult` with the `token` (or `None`) and the `evidence` sent to the attestation provider.
+- `collect_guest_evidence()` / `collect_platform_evidence()` return the evidence without sending it to the attestation provider.
+
+```python
+from src.attestation_client import AttestationClient, AttestationClientParameters, Verifier
+from src.isolation import IsolationType
+from src.logger import Logger
+
+parameters = AttestationClientParameters(
+  endpoint="https://sharedweu.weu.attest.azure.net/attest/AzureGuest?api-version=2020-10-01",
+  verifier=Verifier.MAA,
+  isolation_type=IsolationType.TRUSTED_LAUNCH,
+  claims=b'{"nonce":"abc123"}',
+  max_retries=1)
+result = AttestationClient(Logger('logger').get_logger(), parameters).attest_guest_detailed()
+print(result.token, result.evidence)
+```
+
+`claims` is either a JSON-serializable value (such as a dict), whose `json.dumps()` output is hashed into the hardware report, or `bytes` holding UTF-8 encoded JSON, which are hashed exactly as given so a relying party can recompute the digest from the same bytes. `max_retries` is the maximum number of attempts; `1` disables retries.
 
 ## read_report (only SNP)
 Tool to read the Attestation report from the hardware the CVM is running on.

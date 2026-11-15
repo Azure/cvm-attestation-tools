@@ -7,6 +7,7 @@ import pytest
 from click.testing import CliRunner
 from attest import attest
 import hashlib
+import logging
 from unittest.mock import MagicMock, patch
 from src.attestation_client import AttestationClient
 from src.isolation import IsolationType
@@ -92,3 +93,15 @@ def test_attest_falls_back_to_regional_endpoint(mocker):
   assert result.exit_code == 0, result.output
   mock_get_endpoint.assert_called_once()
   assert mock_params.call_args.kwargs['endpoint'] == "https://regional.test.com"
+
+
+@pytest.mark.parametrize("args, expected_level", [([], logging.INFO), (['--v'], logging.DEBUG)])
+def test_attest_verbose_flag_sets_log_level(mock_parse_config_file, mocker, args, expected_level):
+  mocker.patch("attest.AttestationClientParameters")
+  mocker.patch("attest.AttestationClient")
+  logger = mocker.patch("attest.Logger").return_value.get_logger.return_value
+
+  result = CliRunner().invoke(attest, ['--c', 'somefile.json', '--t', 'Guest'] + args)
+
+  assert result.exit_code == 0, result.output
+  logger.setLevel.assert_called_once_with(expected_level)

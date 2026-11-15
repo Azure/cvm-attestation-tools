@@ -342,3 +342,23 @@ def test_should_try_backoff_when_retry_after_not_present(maa_provider, mocker):
     assert result == "encoded_token_value"
     assert mock_post.call_count == 3  # Two failures, then success
     mock_sleep.assert_has_calls([call(1), call(2)])  # Retries before success
+
+
+def test_maa_provider_honors_max_retries():
+  maa_provider = MAAProvider(MagicMock(), IsolationType.UNDEFINED, "https://someendpoint.com/api", max_retries=2)
+  mock_response = MagicMock(status_code=500, text='server_error')
+
+  with patch('time.sleep', return_value=None) as mock_sleep, \
+       patch('requests.post', return_value=mock_response) as mock_post:
+    with pytest.raises(AttestationProviderException):
+      maa_provider.attest_guest({'dummy_key': 'dummy_value'})
+
+  assert mock_post.call_count == 2
+  assert mock_sleep.call_count == 1
+
+
+@pytest.mark.parametrize("max_retries", [0, -1, True, "3"])
+def test_maa_provider_rejects_invalid_max_retries(max_retries):
+  with pytest.raises(ValueError) as excinfo:
+    MAAProvider(default_logger, IsolationType.TDX, "https://someendpoint.com/api", max_retries=max_retries)
+  assert "Invalid max_retries" in str(excinfo.value)

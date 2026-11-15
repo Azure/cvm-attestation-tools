@@ -22,6 +22,14 @@ class AttestationProviderException(Exception):
   pass
 
 
+def validate_max_retries(max_retries):
+  """
+  Raises ValueError unless max_retries (the maximum number of attempts) is a positive integer.
+  """
+  if isinstance(max_retries, bool) or not isinstance(max_retries, int) or max_retries < 1:
+    raise ValueError(f"Invalid max_retries: {max_retries}. Must be an integer of at least 1.")
+
+
 class IAttestationProvider(ABC):
   """
   Interface to Attestation Provider
@@ -45,7 +53,7 @@ class IAttestationProvider(ABC):
 
 
 class MAAProvider(IAttestationProvider):
-  def __init__(self, logger: Logger, isolation: IsolationType, endpoint: str):
+  def __init__(self, logger: Logger, isolation: IsolationType, endpoint: str, max_retries: int = 5):
     # Validate the isolation type
     if not isinstance(isolation, IsolationType):
       raise ValueError(
@@ -60,15 +68,18 @@ class MAAProvider(IAttestationProvider):
         f"Invalid endpoint: {endpoint}. Endpoint must be a valid HTTPS URL."
       )
 
+    validate_max_retries(max_retries)
+
     self.log = logger
     self.isolation = isolation
     self.endpoint = endpoint
+    self.max_retries = max_retries
 
   def _send_attestation_request(self, payload):
     """
     Sends an attestation request to the provider with retries and exponential backoff.
     """
-    max_retries = 5
+    max_retries = self.max_retries
     backoff_factor = 1
     retries = 0
 
