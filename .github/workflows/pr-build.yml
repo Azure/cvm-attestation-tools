@@ -14,7 +14,7 @@ jobs:
     runs-on: windows-2022
     steps:
       - name: Check out PR code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       
       - name: Build executables
         shell: pwsh
@@ -23,7 +23,7 @@ jobs:
           .\build.ps1 -Verbose
       
       - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: pr-attest-win
           path: ${{ github.workspace }}\cvm-attestation\release\*
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Check out PR code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       
       - name: Build executables
         shell: bash
@@ -43,7 +43,7 @@ jobs:
           sudo ./build.sh --verbose
       
       - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: pr-attest-lin
           path: ${{ github.workspace }}/cvm-attestation/release/*
